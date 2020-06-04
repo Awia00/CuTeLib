@@ -1,0 +1,6 @@
+# Settings
+.vscode/settings.json
+
+# Generated files
+build
+inst
