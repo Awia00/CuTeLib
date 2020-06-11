@@ -1,11 +1,11 @@
 #include <cute/array.h>
+#include <cute/tensor_span.h>
 #include <cute/unique_ptr.h>
 #include <iostream>
 
 namespace cute
 {
 
-/// Namespaced run
 void array_examples()
 {
     // Example 01
@@ -25,7 +25,6 @@ void array_examples()
     std::cout << std::endl;
 }
 
-/// Namespaced run
 void unique_ptr_examples()
 {
     // create a float cpu unique_ptr with 128 elements.
@@ -48,6 +47,22 @@ void unique_ptr_examples()
     // Both ofcourse gets deleted when running out of scope.
 }
 
+void tensor_span_examples()
+{
+    const auto cpu_data = cute::make_unique<float, Hardware::CPU>(128);
+    auto vector_span = get_span_of_data(cpu_data, Array<int32_t, 1>{ 128 });
+    vector_span.elem_ref(64) = 10;
+    std::cout << "vector_span[0]:\t\t" << vector_span[0] << std::endl; // prints 0
+    std::cout << "vector_span.elem(64):\t" << vector_span.elem(64) << std::endl; // prints 10
+
+    auto matric_span = get_span_of_data(cpu_data, Array<int32_t, 2>{ 2, 64 });
+    std::cout << "matric_span.elem(1,0):\t" << matric_span.elem(1, 0) << std::endl; // prints 10
+    auto second_row_span = matric_span[1];
+    std::cout << "matric_span[1].elem(0):\t" << second_row_span.elem(0) << std::endl; // prints 10
+
+    // Notice that these can be used in kernels, as long as the Hardware template is GPU
+}
+
 
 } // namespace cute
 
@@ -58,4 +73,5 @@ int main()
 
     cute::array_examples();
     cute::unique_ptr_examples();
+    cute::tensor_span_examples();
 }
