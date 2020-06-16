@@ -61,7 +61,6 @@ HardwareUniquePtr<T, HardwareV> make_unique(size_t num_elements)
     return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements));
 }
 
-
 template <typename HardwareUniquePtrT>
 constexpr inline Hardware what_hardware() noexcept
 {
@@ -69,6 +68,66 @@ constexpr inline Hardware what_hardware() noexcept
     using T = typename std::remove_const_t<typename RemRef::element_type>;
     using DT = typename RemRef::deleter_type;
     return std::is_same_v<DT, DeleteFunctorGPU<T>> ? Hardware::GPU : Hardware::CPU;
+}
+
+
+enum struct MemcpyType
+{
+    HostToHost,
+    HostToDevice,
+    DeviceToHost,
+    DeviceToDevice
+};
+
+template <Hardware HardwareFromV, Hardware HardwareToV>
+constexpr static MemcpyType get_memcpy_type()
+{
+    if (HardwareFromV == HardwareToV)
+    {
+        if (HardwareFromV == Hardware::CPU)
+        {
+            return MemcpyType::HostToHost;
+        }
+        return MemcpyType::DeviceToDevice;
+    }
+    if (HardwareFromV == Hardware::CPU)
+    {
+        return MemcpyType::HostToDevice;
+    }
+    return MemcpyType::DeviceToHost;
+}
+
+template <typename HardwareUniquePtrFromT, typename HardwareUniquePtrToT>
+void memcpy(const HardwareUniquePtrFromT& from_ptr, HardwareUniquePtrToT& to_ptr, size_t elements)
+{
+    using FromRemRef = typename std::remove_reference_t<HardwareUniquePtrFromT>;
+    using ToRemRef = typename std::remove_reference_t<HardwareUniquePtrToT>;
+    using From_T = typename std::remove_const_t<typename FromRemRef::element_type>;
+    using T = typename std::remove_const_t<typename ToRemRef::element_type>;
+    static_assert(std::is_same_v<From_T, T>, "From and to were not of same type");
+
+    const auto from_data = from_ptr.get();
+
+    constexpr auto memcpy_type =
+        get_memcpy_type<what_hardware<HardwareUniquePtrFromT>(), what_hardware<HardwareUniquePtrToT>()>();
+
+    // Since memcpy_type is constexpr, these if statements are optimized away - but I will not add if-constexpr for now since it is only supported in CUDA 11.
+    if (memcpy_type == MemcpyType::HostToHost)
+    {
+        std::copy(from_data, from_data + elements, to_ptr.get());
+    }
+    else if (memcpy_type == MemcpyType::HostToDevice)
+    {
+        cudaMemcpy(to_ptr.get(), from_data, elements * sizeof(T), cudaMemcpyHostToDevice);
+    }
+    else if (memcpy_type == MemcpyType::DeviceToHost)
+    {
+        cudaMemcpy(to_ptr.get(), from_data, elements * sizeof(T), cudaMemcpyDeviceToHost);
+    }
+    else // if (memcpy_type == MemcpyType::DeviceToDevice)
+    {
+        cudaMemcpy(to_ptr.get(), from_data, elements * sizeof(T), cudaMemcpyDeviceToDevice);
+    }
 }
 
 } // namespace cute

@@ -76,6 +76,21 @@ void tensor_span_examples()
     std::cout << "const_span:\t" << elem_const << std::endl; // prints 0.0
 }
 
+void memcpy_examples()
+{
+    auto cpu_data = cute::make_unique<float, Hardware::CPU>(128);
+    auto gpu_data = cute::make_unique<float, Hardware::GPU>(128);
+    cpu_data.get()[0] = 123;
+
+    memcpy(cpu_data, gpu_data, 128);
+    // there...
+    cpu_data.get()[0] = 321;
+    // ... and back again
+    memcpy(gpu_data, cpu_data, 128);
+
+    std::cout << "cpu_data is back:\t" << cpu_data.get()[0] << std::endl; // prints 123
+}
+
 
 } // namespace cute
 
@@ -87,4 +102,5 @@ int main()
     cute::array_examples();
     cute::unique_ptr_examples();
     cute::tensor_span_examples();
+    cute::memcpy_examples();
 }
