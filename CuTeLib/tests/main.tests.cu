@@ -1,4 +1,5 @@
 #include <cute/array.h>
+#include <cute/tensor.h>
 #include <cute/tensor_span.h>
 #include <cute/unique_ptr.h>
 #include <iostream>
@@ -49,18 +50,30 @@ void unique_ptr_examples()
 
 void tensor_span_examples()
 {
-    const auto cpu_data = cute::make_unique<float, Hardware::CPU>(128);
+    auto cpu_data = cute::make_unique<float, Hardware::CPU>(128);
     auto vector_span = get_span_of_data(cpu_data, Array<int32_t, 1>{ 128 });
     vector_span.elem_ref(64) = 10;
     std::cout << "vector_span[0]:\t\t" << vector_span[0] << std::endl; // prints 0
     std::cout << "vector_span.elem(64):\t" << vector_span.elem(64) << std::endl; // prints 10
 
-    auto matric_span = get_span_of_data(cpu_data, Array<int32_t, 2>{ 2, 64 });
-    std::cout << "matric_span.elem(1,0):\t" << matric_span.elem(1, 0) << std::endl; // prints 10
-    auto second_row_span = matric_span[1];
-    std::cout << "matric_span[1].elem(0):\t" << second_row_span.elem(0) << std::endl; // prints 10
+    auto matrix_span = get_span_of_data(cpu_data, Array<int32_t, 2>{ 2, 64 });
+    std::cout << "matrix_span.elem(1,0):\t" << matrix_span.elem(1, 0) << std::endl; // prints 10
+    auto second_row_span = matrix_span[1];
+    std::cout << "matrix_span[1].elem(0):\t" << second_row_span.elem(0) << std::endl; // prints 10
 
-    // Notice that these can be used in kernels, as long as the Hardware template is GPU
+    // You can use spans over raw data, or you can use the Tensor class which owns data and allows you to easily get a span.
+    auto tensor = Tensor<int8_t, 3, Hardware::CPU>({ 1, 2, 3 });
+    auto tensor_span = tensor.get_span();
+    auto& elem = tensor_span.elem_ref(0, 1, 2);
+    elem = 1;
+    std::cout << "span.elem_ref(0, 1, 2):\t" << static_cast<bool>(tensor_span.elem_ref(0, 1, 2))
+              << std::endl; // prints 1
+
+    // or const. Note that spans over constant data does not have to be constant themselves.
+    const auto tensor_const = Vector<double, Hardware::CPU>({ 5 }); // Vector is just a 1d Tensor
+    auto tensor_const_span = tensor_const.get_span();
+    const auto& elem_const = tensor_const_span.elem_ref(1);
+    std::cout << "const_span:\t" << elem_const << std::endl; // prints 0.0
 }
 
 
