@@ -3,6 +3,7 @@
 #include <cute/tensor_span.h>
 #include <cute/unique_ptr.h>
 #include <iostream>
+#include <vector>
 
 namespace cute
 {
@@ -30,11 +31,11 @@ void unique_ptr_examples()
 {
     // create a float cpu unique_ptr with 128 elements.
     // auto is std::unique_ptr<float[], HardwareDeleteFunctor<float, Hardware::CPU>>
-    const auto uniq_cpu_ptr = cute::make_unique<float, Hardware::CPU>(128);
+    const auto uniq_cpu_ptr = cute::make_unique<float[], Hardware::CPU>(128);
 
     // create a float cpu unique_ptr with 128 elements
     // auto is std::unique_ptr<float[], HardwareDeleteFunctor<float, Hardware::GPU>>
-    const auto uniq_gpu_ptr = cute::make_unique<float, Hardware::GPU>(128);
+    const auto uniq_gpu_ptr = cute::make_unique<float[], Hardware::GPU>(128);
 
     static_assert(!std::is_same_v<decltype(uniq_cpu_ptr), decltype(uniq_gpu_ptr)>,
                   "The two type are not the same Yay.");
@@ -50,8 +51,10 @@ void unique_ptr_examples()
 
 void tensor_span_examples()
 {
-    auto cpu_data = cute::make_unique<float, Hardware::CPU>(128);
+    // cute::make_unique always wants array types for now.
+    auto cpu_data = cute::make_unique<float[], Hardware::CPU>(128);
     auto vector_span = get_span_of_data(cpu_data, Array<int32_t, 1>{ 128 });
+    vector_span.elem_ref(0) = 0;
     vector_span.elem_ref(64) = 10;
     std::cout << "vector_span[0]:\t\t" << vector_span[0] << std::endl; // prints 0
     std::cout << "vector_span.elem(64):\t" << vector_span.elem(64) << std::endl; // prints 10
@@ -70,25 +73,25 @@ void tensor_span_examples()
               << std::endl; // prints 1
 
     // or const. Note that spans over constant data does not have to be constant themselves.
-    const auto tensor_const = Vector<double, Hardware::CPU>({ 5 }); // Vector is just a 1d Tensor
+    const auto tensor_const = Vector<double, Hardware::CPU>(std::vector<double>{ 5, 4, 3, 2, 1 }, { 5 }); // Vector is just a 1d Tensor
     auto tensor_const_span = tensor_const.get_span();
     const auto& elem_const = tensor_const_span.elem_ref(1);
-    std::cout << "const_span:\t" << elem_const << std::endl; // prints 0.0
-}
+    std::cout << "const_span:\t" << elem_const << std::endl; // prints 4.0
 
-void memcpy_examples()
-{
-    auto cpu_data = cute::make_unique<float, Hardware::CPU>(128);
-    auto gpu_data = cute::make_unique<float, Hardware::GPU>(128);
-    cpu_data.get()[0] = 123;
 
-    memcpy(cpu_data, gpu_data, 128);
+    // We can use the copy constructors or use the transfer methods for transfering data to and from different hardware.
+    auto cpu_tensor = Tensor<int32_t, 2, Hardware::CPU>({ 2, 2 });
+    auto cpu_transfered = cpu_tensor.transfer<Hardware::CPU>(); // just a regular copy
+    cpu_transfered.get_span().elem_ref(0, 0) = 123;
+
     // there...
-    cpu_data.get()[0] = 321;
-    // ... and back again
-    memcpy(gpu_data, cpu_data, 128);
+    auto gpu_transfered = cpu_transfered.transfer<Hardware::GPU>();
+    cpu_transfered.get_span().elem_ref(0, 0) = 1; // zero out to show it is a copy
 
-    std::cout << "cpu_data is back:\t" << cpu_data.get()[0] << std::endl; // prints 123
+    // ... and back again
+    auto moved_back = gpu_transfered.transfer<Hardware::CPU>();
+    std::cout << "CPU->GPU->CPU:\t" << moved_back.get_span().elem(0, 0) << std::endl; // prints 123
+    std::cout << std::endl;
 }
 
 
@@ -102,5 +105,6 @@ int main()
     cute::array_examples();
     cute::unique_ptr_examples();
     cute::tensor_span_examples();
-    cute::memcpy_examples();
+
+    std::cout << "Done" << std::endl;
 }

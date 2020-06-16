@@ -23,15 +23,99 @@ class Tensor
     using index_type = typename Traits::index_type;
     using value_type = T;
 
+    using MyT = Tensor<T, RankV, HardwareV, Traits>;
+
     private:
-    HardwareUniquePtr<T, HardwareV> data_;
+    HardwareUniquePtr<T[], HardwareV> data_;
     Array<shape_type, RankV> shape_;
 
     public:
-    explicit Tensor(Array<shape_type, RankV> shape)
-      : data_(cute::make_unique<T, HardwareV>(shape.template product<size_type>()))
+    explicit Tensor(Array<shape_type, RankV> shape) noexcept
+      : data_(cute::make_unique<T[], HardwareV>(shape.template product<size_type>()))
       , shape_(std::move(shape))
     {
+        static_assert(!std::is_array_v<T>, "T should not be a array type");
+        static_assert(!std::is_const_v<T>, "T should not be const");
+
+        memset(this->data_, 0, this->size() * sizeof(T));
+    }
+
+    Tensor(const std::vector<T>& vec, Array<shape_type, RankV> shape) noexcept
+      : data_(cute::make_unique<T[], HardwareV>(shape.template product<size_type>()))
+      , shape_(std::move(shape))
+    {
+        static_assert(!std::is_array_v<T>, "T should not be a array type");
+        static_assert(!std::is_const_v<T>, "T should not be const");
+
+        memcpy(vec, this->data_, vec.size());
+    }
+
+    // Templated copy constructor
+    template <typename OtherTensorT>
+    explicit Tensor(const OtherTensorT& other_tensor) noexcept
+      : data_(cute::make_unique<T[], HardwareV>(other_tensor.get_shape().template product<size_type>()))
+      , shape_(other_tensor.get_shape())
+    {
+        static_assert(!std::is_array_v<T>, "T should not be a array type");
+        static_assert(!std::is_const_v<T>, "T should not be const");
+
+        memcpy(other_tensor.data_ptr(), this->data_, other_tensor.size());
+    }
+
+    // Templated copy assignment
+    template <typename OtherTensorT>
+    MyT& operator=(const OtherTensorT& other_tensor) noexcept
+    {
+        static_assert(!std::is_array_v<T>, "T should not be a array type");
+        static_assert(!std::is_const_v<T>, "T should not be const");
+
+        if (this->size() != other_tensor.size())
+        {
+            this->data_.reset();
+            this->data_ = cute::make_unique<T[], HardwareV>(other_tensor.size());
+        }
+        this->shape_ = other_tensor.get_shape();
+
+        memcpy(other_tensor.data_ptr(), this->data_, this->size());
+        return *this;
+    }
+
+    // copy constructor
+    Tensor(const MyT& other_tensor) noexcept
+      : data_(cute::make_unique<T[], HardwareV>(other_tensor.get_shape().template product<size_type>()))
+      , shape_(other_tensor.get_shape())
+    {
+        static_assert(!std::is_array_v<T>, "T should not be a array type");
+        static_assert(!std::is_const_v<T>, "T should not be const");
+
+        memcpy(other_tensor.data_ptr(), this->data_, other_tensor.size());
+    };
+    // copy assignment
+    MyT& operator=(const MyT& other_tensor) noexcept
+    {
+        static_assert(!std::is_array_v<T>, "T should not be a array type");
+        static_assert(!std::is_const_v<T>, "T should not be const");
+
+        if (this->size() != other_tensor.size())
+        {
+            this->data_.reset();
+            this->data_ = cute::make_unique<T[], HardwareV>(other_tensor.size());
+        }
+        this->shape_ = other_tensor.get_shape();
+
+        memcpy(other_tensor.data_ptr(), this->data_, this->size());
+        return *this;
+    };
+
+    // move is not defined for other tensor types
+    Tensor(MyT&& other_tensor) noexcept = default;
+    MyT& operator=(MyT&& other_tensor) noexcept = default;
+
+    /// Transfer copies this tensor to the specified hardware
+    template <Hardware ToHardwareV>
+    auto transfer() const noexcept
+    {
+        return Tensor<T, RankV, ToHardwareV, Traits>(*this);
     }
 
     static constexpr Hardware hardware() noexcept
@@ -53,6 +137,11 @@ class Tensor
         return this->shape_.template product<size_t>();
     }
 
+    const Array<shape_type, RankV>& get_shape() const noexcept
+    {
+        return this->shape_;
+    }
+
     shape_type shape(int32_t dim) const noexcept
     {
         return this->shape_[dim];
@@ -62,6 +151,20 @@ class Tensor
     shape_type shape() const noexcept
     {
         return this->shape_.template at<Idx>();
+    }
+
+    T* data() noexcept
+    {
+        return this->data_.get();
+    }
+    const T* data() const noexcept
+    {
+        return this->data_.get();
+    }
+
+    const HardwareUniquePtr<T[], HardwareV>& data_ptr() const noexcept
+    {
+        return this->data_;
     }
 
     TensorSpan<T, RankV, HardwareV> get_span() noexcept
@@ -83,6 +186,7 @@ class Tensor
         return this->get_span();
     }
 };
+
 
 template <typename T, Hardware HardwareV, typename Traits = TensorTraits>
 using Vector = Tensor<T, 1, HardwareV, Traits>;
