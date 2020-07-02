@@ -169,12 +169,12 @@ class Tensor
 
     TensorSpan<T, RankV, HardwareV> get_span() noexcept
     {
-        return get_span_of_data(this->data_, this->shape_);
+        return get_span_of(this->data_, this->shape_);
     }
 
     TensorSpan<const T, RankV, HardwareV> get_span() const noexcept
     {
-        return get_span_of_data(this->data_, this->shape_);
+        return get_span_of(this->data_, this->shape_);
     }
 
     operator TensorSpan<T, RankV, HardwareV>() noexcept

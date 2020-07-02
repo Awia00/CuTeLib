@@ -42,34 +42,34 @@ class TensorSpanBase
         return RankV;
     }
 
-    CUTE_DEV_HOST bool empty() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] bool empty() const noexcept
     {
         return this->shape_.empty();
     }
 
-    CUTE_DEV_HOST size_t size() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] size_t size() const noexcept
     {
         return this->shape_.template product<size_t>();
     }
 
-    CUTE_DEV_HOST const Array<shape_type, RankV>& get_shape() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] const Array<shape_type, RankV>& get_shape() const noexcept
     {
         return this->shape_;
     }
 
-    CUTE_DEV_HOST shape_type shape(int32_t dim) const noexcept
+    CUTE_DEV_HOST [[nodiscard]] shape_type shape(int32_t dim) const noexcept
     {
         return this->shape_[dim];
     }
 
     template <int32_t Idx>
-    CUTE_DEV_HOST shape_type shape() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] shape_type shape() const noexcept
     {
         return this->shape_.template at<Idx>();
     }
 
     template <int32_t DimV>
-    CUTE_DEV_HOST index_type stride() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr index_type stride() const noexcept
     {
         auto stride = 1;
         for (auto i = DimV + 1; i < RankV; i++)
@@ -81,20 +81,20 @@ class TensorSpanBase
 
     protected:
     template <int32_t DimV>
-    CUTE_DEV_HOST index_type index() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr index_type index(index_type index_sum) const noexcept
     {
-        static_assert(DimV == RankV, "This case should only happen when DimV is RankV");
-        return 0;
+        static_assert(DimV == RankV, "This case should only happen when DimV is RankV-1");
+        return index_sum;
     }
 
     template <int32_t DimV, typename... Args>
-    CUTE_DEV_HOST index_type index(index_type first, Args... args) const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr index_type index(index_type index_sum, index_type index, Args... args) const noexcept
     {
-        static_assert(DimV < RankV, "DimV was more than RankV");
+        static_assert(DimV < RankV, "DimV was more than RankV-1");
         static_assert(DimV >= 0, "DimV was less than 0");
 
         // For RankV == 1, stride should be optimized away by the compiler since it is 1
-        return first * this->stride<DimV>() + index<DimV + 1>(args...);
+        return this->index<DimV + 1>(index_sum * this->shape<DimV>() + index, args...);
     }
 };
 
@@ -104,7 +104,8 @@ class TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
     public:
     using SuperT = TensorSpanBase<T, RankV, HardwareV, Traits>;
 
-    CUTE_DEV_HOST TensorSpan(T* data, Array<shape_type, RankV> shape) : SuperT(data, shape)
+    CUTE_DEV_HOST TensorSpan(T* data, Array<shape_type, RankV> shape)
+      : SuperT(data, std::move(shape))
     {
     }
 
@@ -114,7 +115,7 @@ class TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
         ENSURE_CORRECT_HARDWARE(HardwareV);
         static_assert(sizeof...(Args) == RankV, "One argument per dimension");
 
-        return this->data_[this->index<0>(args...)];
+        return this->data_[this->index<0>(0, args...)];
     }
 
     template <typename... Args>
@@ -123,10 +124,10 @@ class TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
         ENSURE_CORRECT_HARDWARE(HardwareV);
         static_assert(sizeof...(Args) == RankV, "One argument per dimension");
 
-        return this->data_[this->index<0>(args...)];
+        return this->data_[this->index<0>(0, args...)];
     }
 
-    CUTE_DEV_HOST TensorSpan<T, RankV - 1, HardwareV, Traits> operator[](index_type idx) const noexcept
+    CUTE_DEV_HOST [[nodiscard]] TensorSpan<T, RankV - 1, HardwareV, Traits> operator[](index_type idx) const noexcept
     {
         auto offset = this->stride<0>() * idx;
         auto data_ptr = this->data_ + offset;
@@ -134,7 +135,7 @@ class TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
         return TensorSpan<T, RankV - 1, HardwareV, Traits>(data_ptr, std::move(new_shape));
     }
 
-    auto to_const() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] auto to_const() const noexcept
     {
         return TensorSpan<const T, RankV, HardwareV, Traits>(this->data_, this->shape_);
     }
@@ -146,7 +147,7 @@ class TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, Ha
     public:
     using SuperT = TensorSpanBase<T, 1, HardwareV, Traits>;
 
-    CUTE_DEV_HOST TensorSpan(T* data, Array<shape_type, 1> shape) : SuperT(data, shape)
+    CUTE_DEV_HOST TensorSpan(T* data, Array<shape_type, 1> shape) : SuperT(data, std::move(shape))
     {
     }
 
@@ -156,7 +157,7 @@ class TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, Ha
         ENSURE_CORRECT_HARDWARE(HardwareV);
         static_assert(sizeof...(Args) == 1, "One argument per dimension");
 
-        return this->data_[this->index<0>(args...)];
+        return this->data_[this->index<0>(0, args...)];
     }
 
     template <typename... Args>
@@ -165,15 +166,16 @@ class TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, Ha
         ENSURE_CORRECT_HARDWARE(HardwareV);
         static_assert(sizeof...(Args) == 1, "One argument per dimension");
 
-        return this->data_[this->index<0>(args...)];
+        return this->data_[this->index<0>(0, args...)];
     }
 
-    CUTE_DEV_HOST T operator[](index_type idx) const noexcept
+    CUTE_DEV_HOST T& operator[](index_type idx) const noexcept
     {
-        return this->elem(idx);
+        ENSURE_CORRECT_HARDWARE(HardwareV);
+        return this->elem_ref(idx);
     }
 
-    auto to_const() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] TensorSpan<const T, 1, HardwareV, Traits> to_const() const noexcept
     {
         return TensorSpan<const T, 1, HardwareV, Traits>(this->data_, this->shape_);
     }
@@ -191,7 +193,7 @@ using CubeSpan = TensorSpan<T, 3, HardwareV, Traits>;
 
 
 template <typename HardwareUniquePtrT, typename ShapeContainerT, typename Traits = TensorSpanTraits>
-inline auto get_span_of_data(HardwareUniquePtrT& data, ShapeContainerT&& shapes)
+[[nodiscard]] auto get_span_of(HardwareUniquePtrT& data, ShapeContainerT&& shapes)
 {
     using T = std::remove_pointer_t<decltype(data.get())>;
     using ShapeContainerFixed = typename std::remove_reference_t<ShapeContainerT>;
@@ -201,7 +203,7 @@ inline auto get_span_of_data(HardwareUniquePtrT& data, ShapeContainerT&& shapes)
 }
 
 template <typename HardwareUniquePtrT, typename ShapeContainerT, typename Traits = TensorSpanTraits>
-inline auto get_span_of_data(const HardwareUniquePtrT& data, ShapeContainerT&& shapes)
+[[nodiscard]] auto get_span_of(const HardwareUniquePtrT& data, ShapeContainerT&& shapes)
 {
     using T = std::remove_pointer_t<decltype(data.get())>;
     using ShapeContainerFixed = typename std::remove_reference_t<ShapeContainerT>;
