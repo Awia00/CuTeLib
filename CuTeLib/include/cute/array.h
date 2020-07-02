@@ -198,6 +198,18 @@ class Array
     }
 };
 
+template <typename T, typename... Args>
+auto array(T first, Args... args)
+{
+    return Array<T, sizeof...(Args) + 1>{ first, args... };
+}
+
+template <typename T, int32_t Length>
+auto array(Array<T, Length> arr)
+{
+    return arr;
+}
+
 template <typename T, int32_t Length>
 std::ostream& stream_array(std::ostream& stream, const Array<T, Length>& arr, char elem_breaker = ' ')
 {

@@ -53,13 +53,13 @@ void tensor_span_examples()
 {
     // cute::make_unique always wants array types for now.
     auto cpu_data = cute::make_unique<float[], Hardware::CPU>(128);
-    auto vector_span = get_span_of_data(cpu_data, Array<int32_t, 1>{ 128 });
+    auto vector_span = get_span_of(cpu_data, shape(128));
     vector_span.elem_ref(0) = 0;
     vector_span.elem_ref(64) = 10;
     std::cout << "vector_span[0]:\t\t" << vector_span[0] << std::endl; // prints 0
     std::cout << "vector_span.elem(64):\t" << vector_span.elem(64) << std::endl; // prints 10
 
-    auto matrix_span = get_span_of_data(cpu_data, Array<int32_t, 2>{ 2, 64 });
+    auto matrix_span = get_span_of(cpu_data, shape(2, 64));
     std::cout << "matrix_span.elem(1,0):\t" << matrix_span.elem(1, 0) << std::endl; // prints 10
     auto second_row_span = matrix_span[1];
     std::cout << "matrix_span[1].elem(0):\t" << second_row_span.elem(0) << std::endl; // prints 10

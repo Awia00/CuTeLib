@@ -210,13 +210,10 @@ inline auto get_span_of_data(const HardwareUniquePtrT& data, ShapeContainerT&& s
     return TensorSpan<const T, RankV, HardwareV, Traits>(data.get(), std::forward<ShapeContainerT>(shapes));
 }
 
-// template <typename HardwareUniquePtrT, typename ShapeContainerT, typename Traits = TensorSpanTraits>
-// inline auto get_span_of_data(const HardwareUniquePtrT& data, ShapeContainerT&& shapes)
-// {
-//     using T = typename std::remove_pointer_t<decltype(data.get())>;
-//     constexpr auto RankV = std::remove_all_extents_t<ShapeContainerT>::size();
-//     constexpr auto HardwareV = what_hardware<decltype(data)>();
-//     return TensorSpan<T, RankV, HardwareV, Traits>(data.get(), std::forward<ShapeContainerT>(shapes));
-// }
+template <typename... Args>
+[[nodiscard]] auto shape(Args... args)
+{
+    return Array<TensorSpanTraits::shape_type, sizeof...(Args)>{ args... };
+}
 
 } // namespace cute
