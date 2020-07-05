@@ -43,13 +43,16 @@ install(
 
 # === TESTS === 
 set(TEST_NAME cutelib_tests)
-add_executable(${TEST_NAME} tests/main.tests.cu)
-target_link_libraries(${TEST_NAME} PRIVATE ${LIB_NAME})
+
+file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp" "tests/*.cu")
+add_executable(${TEST_NAME} ${TEST_SOURCES})
+target_link_libraries(${TEST_NAME} PRIVATE ${LIB_NAME} doctest)
 
 set_target_properties(
     ${TEST_NAME}
     PROPERTIES CUDA_SEPARABLE_COMPILATION ON
 )
+
 
 # == Install ==
 install(
@@ -60,3 +63,26 @@ install(
     EXPORT ${TEST_NAME}-config
     NAMESPACE ${LIB_NAME}::tests
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${TEST_NAME})
+
+
+# === Examples === 
+set(EXAMPLES_NAME cutelib_examples)
+
+file(GLOB_RECURSE EXAMPLE_SOURCES "examples/*.cpp" "examples/*.cu")
+add_executable(${EXAMPLES_NAME} ${EXAMPLE_SOURCES})
+target_link_libraries(${EXAMPLES_NAME} PRIVATE ${LIB_NAME})
+
+set_target_properties(
+    ${EXAMPLES_NAME}
+    PROPERTIES CUDA_SEPARABLE_COMPILATION ON
+)
+
+# == Install ==
+install(
+    TARGETS ${EXAMPLES_NAME}
+    EXPORT ${EXAMPLES_NAME}-config)
+
+install(
+    EXPORT ${EXAMPLES_NAME}-config
+    NAMESPACE ${LIB_NAME}::examples
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${EXAMPLES_NAME})
