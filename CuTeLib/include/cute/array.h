@@ -97,6 +97,25 @@ class Array
         return this->data_[Idx];
     }
 
+    CUTE_DEV_HOST constexpr bool operator==(const Array<T, Length>& other) const noexcept
+    {
+        auto res = true;
+        for (auto i = 0; i < Length; i++)
+        {
+            res &= this->data_[i] == other.data_[i];
+        }
+        return res;
+    }
+
+    CUTE_DEV_HOST constexpr bool operator!=(const Array<T, Length>& other) const noexcept
+    {
+        auto res = true;
+        for (auto i = 0; i < Length; i++)
+        {
+            res &= this->data_[i] != other.data_[i];
+        }
+        return res;
+    }
 
     template <typename AccumulatorT = T>
     CUTE_DEV_HOST constexpr AccumulatorT sum() const noexcept
@@ -115,6 +134,27 @@ class Array
         for (auto i = 0; i < Length; i++)
         {
             res[i] = this->data_[i] + other.data_[i];
+        }
+        return res;
+    }
+
+    CUTE_DEV_HOST constexpr Array<T, Length> negate() const noexcept
+    {
+        auto res = Array<T, Length>();
+        for (auto i = 0; i < Length; i++)
+        {
+            res[i] = -this->data_[i];
+        }
+        return res;
+    }
+
+    template <typename OtherT>
+    CUTE_DEV_HOST constexpr Array<OtherT, Length> cast() const noexcept
+    {
+        auto res = Array<OtherT, Length>();
+        for (auto i = 0; i < Length; i++)
+        {
+            res[i] = static_cast<OtherT>(this->data_[i]);
         }
         return res;
     }
@@ -168,7 +208,7 @@ class Array
     template <int32_t TakeN>
     CUTE_DEV_HOST constexpr Array<T, TakeN> take() const noexcept
     {
-        static_assert(TakeN < Length, "Cannot take more items than available");
+        static_assert(TakeN <= Length, "Cannot take more items than available");
 
         auto res = Array<T, TakeN>();
         for (auto i = 0; i < TakeN; i++)
@@ -225,4 +265,5 @@ std::ostream& stream_array(std::ostream& stream, const Array<T, Length>& arr, ch
     stream << " ]";
     return stream;
 }
+
 } // namespace cute

@@ -162,6 +162,26 @@ class Tensor
         return this->data_.get();
     }
 
+    T* begin() noexcept
+    {
+        return this->data();
+    }
+
+    T* end() noexcept
+    {
+        return this->data() + this->size();
+    }
+
+    const T* begin() const noexcept
+    {
+        return this->data();
+    }
+
+    const T* end() const noexcept
+    {
+        return this->data() + this->size();
+    }
+
     const HardwareUniquePtr<T[], HardwareV>& data_ptr() const noexcept
     {
         return this->data_;
