@@ -97,15 +97,15 @@ enum struct MemcpyType
 template <Hardware HardwareFromV, Hardware HardwareToV>
 constexpr static MemcpyType get_memcpy_type()
 {
-    if (HardwareFromV == HardwareToV)
+    if constexpr (HardwareFromV == HardwareToV)
     {
-        if (HardwareFromV == Hardware::CPU)
+        if constexpr (HardwareFromV == Hardware::CPU)
         {
             return MemcpyType::HostToHost;
         }
         return MemcpyType::DeviceToDevice;
     }
-    if (HardwareFromV == Hardware::CPU)
+    if constexpr (HardwareFromV == Hardware::CPU)
     {
         return MemcpyType::HostToDevice;
     }
@@ -125,15 +125,15 @@ template <MemcpyType MemcpyTypeT>
 template <typename T>
 void MemCpyPartialTemplateSpecializer<MemcpyTypeT>::memcpy_data<T>(const T* from_ptr, T* to_ptr, size_t elements)
 {
-    if (MemcpyTypeT == MemcpyType::HostToHost)
+    if constexpr (MemcpyTypeT == MemcpyType::HostToHost)
     {
         std::copy(from_ptr, from_ptr + elements, to_ptr);
     }
-    else if (MemcpyTypeT == MemcpyType::HostToDevice)
+    else if constexpr (MemcpyTypeT == MemcpyType::HostToDevice)
     {
         cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyHostToDevice);
     }
-    else if (MemcpyTypeT == MemcpyType::DeviceToHost)
+    else if constexpr (MemcpyTypeT == MemcpyType::DeviceToHost)
     {
         cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToHost);
     }
@@ -194,7 +194,7 @@ template <Hardware HardwareV>
 template <typename T>
 void MemsetPartialTemplateSpecializer<HardwareV>::memset_data<T>(T* ptr, T val, size_t num_bytes)
 {
-    if (HardwareV == Hardware::CPU)
+    if constexpr (HardwareV == Hardware::CPU)
     {
         std::memset(ptr, val, num_bytes);
     }

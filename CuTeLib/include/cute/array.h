@@ -239,13 +239,13 @@ class Array
 };
 
 template <typename T, typename... Args>
-auto array(T first, Args... args)
+[[nodiscard]] constexpr auto array(T first, Args... args)
 {
     return Array<T, sizeof...(Args) + 1>{ first, args... };
 }
 
 template <typename T, int32_t Length>
-auto array(Array<T, Length> arr)
+[[nodiscard]] constexpr auto array(Array<T, Length> arr)
 {
     return arr;
 }

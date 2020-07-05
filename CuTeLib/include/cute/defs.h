@@ -22,8 +22,8 @@
 //"Trying to access cpu elements on the gpu"
 #define ENSURE_CORRECT_HARDWARE(MACRO_HARDWARE_VALUE) assert(MACRO_HARDWARE_VALUE == Hardware::GPU)
 #else
-#define ENSURE_CORRECT_HARDWARE(MACRO_HARDWARE_VALUE) \
-    static_assert(MACRO_HARDWARE_VALUE == Hardware::CPU, "Trying to access gpu elements on the cpu")
+// "Trying to access gpu elements on the cpu"
+#define ENSURE_CORRECT_HARDWARE(MACRO_HARDWARE_VALUE) assert(MACRO_HARDWARE_VALUE == Hardware::CPU)
 #endif
 
 
