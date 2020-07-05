@@ -37,7 +37,7 @@ class Tensor
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
 
-        memset(this->data_, 0, this->size() * sizeof(T));
+        memset(this->data_, T(0), this->size() * sizeof(T));
     }
 
     Tensor(const std::vector<T>& vec, Array<shape_type, RankV> shape) noexcept

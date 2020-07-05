@@ -103,6 +103,10 @@ class TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
 {
     public:
     using SuperT = TensorSpanBase<T, RankV, HardwareV, Traits>;
+    using shape_type = typename Traits::shape_type;
+    using size_type = typename Traits::size_type;
+    using index_type = typename Traits::index_type;
+    using value_type = typename T;
 
     CUTE_DEV_HOST TensorSpan(T* data, Array<shape_type, RankV> shape)
       : SuperT(data, std::move(shape))
@@ -146,6 +150,10 @@ class TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, Ha
 {
     public:
     using SuperT = TensorSpanBase<T, 1, HardwareV, Traits>;
+    using shape_type = typename Traits::shape_type;
+    using size_type = typename Traits::size_type;
+    using index_type = typename Traits::index_type;
+    using value_type = typename T;
 
     CUTE_DEV_HOST TensorSpan(T* data, Array<shape_type, 1> shape) : SuperT(data, std::move(shape))
     {

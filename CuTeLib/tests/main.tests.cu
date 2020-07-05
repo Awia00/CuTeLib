@@ -8,7 +8,7 @@
 namespace cute
 {
 
-void array_examples()
+inline void array_examples()
 {
     // Example 01
     const auto i32_arr = Array<int32_t, 3>{ 0, 1, 2 };
@@ -27,7 +27,7 @@ void array_examples()
     std::cout << std::endl;
 }
 
-void unique_ptr_examples()
+inline void unique_ptr_examples()
 {
     // create a float cpu unique_ptr with 128 elements.
     // auto is std::unique_ptr<float[], HardwareDeleteFunctor<float, Hardware::CPU>>
@@ -49,7 +49,7 @@ void unique_ptr_examples()
     // Both ofcourse gets deleted when running out of scope.
 }
 
-void tensor_span_examples()
+inline void tensor_span_examples()
 {
     // cute::make_unique always wants array types for now.
     auto cpu_data = cute::make_unique<float[], Hardware::CPU>(128);

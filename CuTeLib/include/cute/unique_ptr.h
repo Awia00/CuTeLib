@@ -14,11 +14,7 @@ struct DeleteFunctorGPU
     constexpr DeleteFunctorGPU() noexcept = default;
     using TBase = typename std::remove_all_extents_t<T>;
 
-    void operator()(TBase* p) const noexcept
-    {
-        static_assert(0 < sizeof(TBase), "can't delete an incomplete type");
-        cudaFree(p);
-    }
+    void operator()(TBase* p) const noexcept;
 };
 
 template <typename T>
@@ -26,13 +22,7 @@ struct NewFunctorGPU
 {
     constexpr NewFunctorGPU() noexcept = default;
 
-    [[nodiscard]] auto operator()(size_t num_elements) const noexcept
-    {
-        using TBase = typename std::remove_all_extents_t<T>;
-        TBase* ptr;
-        cudaMalloc(&ptr, num_elements * sizeof(float));
-        return ptr;
-    }
+    [[nodiscard]] auto operator()(size_t num_elements) const noexcept;
 };
 
 template <typename T>
@@ -46,6 +36,25 @@ struct NewFunctorCPU
         return new TBase[num_elements];
     }
 };
+
+#ifdef __CUDACC__
+template <typename T>
+void DeleteFunctorGPU<T>::operator()(TBase* p) const noexcept
+{
+    static_assert(0 < sizeof(TBase), "can't delete an incomplete type");
+    cudaFree(p);
+}
+
+
+template <typename T>
+[[nodiscard]] auto NewFunctorGPU<T>::operator()(size_t num_elements) const noexcept
+{
+    using TBase = typename std::remove_all_extents_t<T>;
+    TBase* ptr;
+    cudaMalloc(&ptr, num_elements * sizeof(float));
+    return ptr;
+}
+#endif
 
 template <typename T, Hardware HardwareV>
 using HardwareDeleteFunctor =
@@ -63,6 +72,7 @@ template <typename T, Hardware HardwareV>
 HardwareUniquePtr<T, HardwareV> make_unique(size_t num_elements)
 {
     static_assert(std::is_array_v<T>, "Must be array type");
+    ENSURE_CUDA_COMPILER_IF_GPU(HardwareV);
     return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements));
 }
 
@@ -102,6 +112,51 @@ constexpr static MemcpyType get_memcpy_type()
     return MemcpyType::DeviceToHost;
 }
 
+
+template <MemcpyType MemcpyTypeT>
+struct MemCpyPartialTemplateSpecializer
+{
+    template <typename T>
+    static void memcpy_data(const T* from_ptr, T* to_ptr, size_t elements);
+};
+
+#ifdef __CUDACC__
+template <MemcpyType MemcpyTypeT>
+template <typename T>
+void MemCpyPartialTemplateSpecializer<MemcpyTypeT>::memcpy_data<T>(const T* from_ptr, T* to_ptr, size_t elements)
+{
+    if (MemcpyTypeT == MemcpyType::HostToHost)
+    {
+        std::copy(from_ptr, from_ptr + elements, to_ptr);
+    }
+    else if (MemcpyTypeT == MemcpyType::HostToDevice)
+    {
+        cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyHostToDevice);
+    }
+    else if (MemcpyTypeT == MemcpyType::DeviceToHost)
+    {
+        cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToHost);
+    }
+    else // if (MemcpyTypeT == MemcpyType::DeviceToDevice)
+    {
+        cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToDevice);
+    }
+}
+
+#else
+template <>
+struct MemCpyPartialTemplateSpecializer<MemcpyType::HostToHost>
+{
+    template <typename T>
+    static void memcpy_data(const T* from_ptr, T* to_ptr, size_t elements)
+    {
+        std::copy(from_ptr, from_ptr + elements, to_ptr);
+    }
+};
+
+#endif
+
+
 template <typename HardwareUniquePtrFromT, typename HardwareUniquePtrToT>
 void memcpy(const HardwareUniquePtrFromT& from_ptr, HardwareUniquePtrToT& to_ptr, size_t elements)
 {
@@ -112,24 +167,7 @@ void memcpy(const HardwareUniquePtrFromT& from_ptr, HardwareUniquePtrToT& to_ptr
     static_assert(std::is_same_v<FromT, T>, "From and to were not of same type");
 
     constexpr auto memcpy_type = get_memcpy_type<what_hardware<FromRemRef>(), what_hardware<ToRemRef>()>();
-
-    // Since memcpy_type is constexpr, these if statements are optimized away - but I will not add if-constexpr for now since it is only supported in CUDA 11.
-    if (memcpy_type == MemcpyType::HostToHost)
-    {
-        std::copy(from_ptr.get(), from_ptr.get() + elements, to_ptr.get());
-    }
-    else if (memcpy_type == MemcpyType::HostToDevice)
-    {
-        cudaMemcpy(to_ptr.get(), from_ptr.get(), elements * sizeof(T), cudaMemcpyHostToDevice);
-    }
-    else if (memcpy_type == MemcpyType::DeviceToHost)
-    {
-        cudaMemcpy(to_ptr.get(), from_ptr.get(), elements * sizeof(T), cudaMemcpyDeviceToHost);
-    }
-    else // if (memcpy_type == MemcpyType::DeviceToDevice)
-    {
-        cudaMemcpy(to_ptr.get(), from_ptr.get(), elements * sizeof(T), cudaMemcpyDeviceToDevice);
-    }
+    MemCpyPartialTemplateSpecializer<memcpy_type>::memcpy_data(from_ptr.get(), to_ptr.get(), elements);
 }
 
 template <typename FromT, typename HardwareUniquePtrToT>
@@ -139,28 +177,45 @@ void memcpy(const std::vector<FromT>& from_ptr, HardwareUniquePtrToT& to_ptr, si
     using T = typename std::remove_const_t<typename ToRemRef::element_type>;
     static_assert(std::is_same_v<FromT, T>, "From and to were not of same type");
 
-    const auto from_data = from_ptr.data();
-
     constexpr auto memcpy_type = get_memcpy_type<Hardware::CPU, what_hardware<HardwareUniquePtrToT>()>();
+    MemCpyPartialTemplateSpecializer<memcpy_type>::memcpy_data(from_ptr.data(), to_ptr.get(), elements);
+}
 
-    // Since memcpy_type is constexpr, these if statements are optimized away - but I will not add if-constexpr for now since it is only supported in CUDA 11.
-    if (memcpy_type == MemcpyType::HostToHost)
+
+template <Hardware HardwareV>
+struct MemsetPartialTemplateSpecializer
+{
+    template <typename T>
+    static void memset_data(T* ptr, T val, size_t num_bytes);
+};
+
+#ifdef __CUDACC__
+template <Hardware HardwareV>
+template <typename T>
+void MemsetPartialTemplateSpecializer<HardwareV>::memset_data<T>(T* ptr, T val, size_t num_bytes)
+{
+    if (HardwareV == Hardware::CPU)
     {
-        std::copy(from_data, from_data + elements, to_ptr.get());
+        std::memset(ptr, val, num_bytes);
     }
-    else if (memcpy_type == MemcpyType::HostToDevice)
+    else // if (hardware == MemcpyType::HostToDevice)
     {
-        cudaMemcpy(to_ptr.get(), from_data, elements * sizeof(T), cudaMemcpyHostToDevice);
-    }
-    else if (memcpy_type == MemcpyType::DeviceToHost)
-    {
-        cudaMemcpy(to_ptr.get(), from_data, elements * sizeof(T), cudaMemcpyDeviceToHost);
-    }
-    else // if (memcpy_type == MemcpyType::DeviceToDevice)
-    {
-        cudaMemcpy(to_ptr.get(), from_data, elements * sizeof(T), cudaMemcpyDeviceToDevice);
+        cudaMemset(ptr, val, num_bytes);
     }
 }
+
+#else
+template <>
+struct MemsetPartialTemplateSpecializer<Hardware::CPU>
+{
+    template <typename T>
+    static void memset_data(T* ptr, T val, size_t num_bytes)
+    {
+        std::memset(ptr, val, num_bytes);
+    }
+};
+#endif
+
 
 template <typename HardwareUniquePtrT, typename T>
 void memset(HardwareUniquePtrT& ptr, T val, size_t num_bytes)
@@ -168,14 +223,8 @@ void memset(HardwareUniquePtrT& ptr, T val, size_t num_bytes)
     using RemRef = typename std::remove_reference_t<HardwareUniquePtrT>;
     constexpr auto hardware = what_hardware<RemRef>();
 
-    if (hardware == Hardware::CPU)
-    {
-        std::memset(ptr.get(), val, num_bytes);
-    }
-    else // if (hardware == MemcpyType::HostToDevice)
-    {
-        cudaMemset(ptr.get(), val, num_bytes);
-    }
+    MemsetPartialTemplateSpecializer<hardware>::memset_data(ptr.get(), val, num_bytes);
 }
+
 
 } // namespace cute
