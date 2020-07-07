@@ -1,7 +1,11 @@
+"""
+Builds and installs the project
+"""
+
 import subprocess
 
 
-def run():
+def build_cpp():
     try:
         build_type = "Debug"
         build_folder = "build"
@@ -35,6 +39,10 @@ def run():
     except subprocess.CalledProcessError as err:
         print(err)
         raise
+
+
+def run():
+    build_cpp()
 
 
 if __name__ == "__main__":
