@@ -6,98 +6,123 @@ namespace cute
 {
 
 template <typename T, int32_t Length>
-class Array
+struct Array
 {
-    public:
     using value_type = T;
     using size_type = int32_t;
 
     T data_[Length];
 
-    // static members
+
+    // ======= Static Members =======
+
+    ///
+    /// Returns true if length is 0 or below
     constexpr static bool empty() noexcept
     {
-        return Length == 0;
+        return Length <= 0;
     }
+
+    ///
+    /// Returns the size of the array - that is the Length template
     constexpr static int32_t size() noexcept
     {
         return Length;
     }
 
-    // Members
 
+    // ======= Members =======
+
+    ///
     /// Returns a pointer to the inner data
-    CUTE_DEV_HOST constexpr const T* data() const noexcept
-    {
-        return this->data_;
-    }
-    /// Returns a pointer to the inner data
-    CUTE_DEV_HOST constexpr T* data() noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr const T* data() const noexcept
     {
         return this->data_;
     }
 
+    ///
+    /// Returns a pointer to the inner data
+    CUTE_DEV_HOST [[nodiscard]] constexpr T* data() noexcept
+    {
+        return this->data_;
+    }
+
+    ///
     /// Returns a const reference to the element at idx position.
     /// No bounds check
-    CUTE_DEV_HOST constexpr T& operator[](const int32_t idx) noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr T& operator[](const int32_t idx) noexcept
     {
         return this->data_[idx];
     }
+
+    ///
     /// Returns a reference to the element at idx position.
     /// No bounds check
-    CUTE_DEV_HOST constexpr const T& operator[](const int32_t idx) const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr const T& operator[](const int32_t idx) const noexcept
     {
         return this->data_[idx];
     }
 
+    ///
     /// Returns the value at idx position in data.
     /// Bounds check runtime.
-    CUTE_DEV_HOST constexpr T at(const int32_t idx) const
-    {
-        assert(idx < Length);
-        return this->data_[idx];
-    }
-    /// Returns a reference to the element at idx position in data.
-    /// Bounds check runtime.
-    CUTE_DEV_HOST constexpr T& at_ref(const int32_t idx)
-    {
-        assert(idx < Length);
-        return this->data_[idx];
-    }
-    /// Returns a const reference to the element at idx position in data.
-    /// Bounds check runtime.
-    CUTE_DEV_HOST constexpr const T& at_ref(const int32_t idx) const
+    CUTE_DEV_HOST [[nodiscard]] constexpr T at(const int32_t idx) const
     {
         assert(idx < Length);
         return this->data_[idx];
     }
 
+    ///
+    /// Returns a reference to the element at idx position in data.
+    /// Bounds check runtime.
+    CUTE_DEV_HOST [[nodiscard]] constexpr T& at_ref(const int32_t idx)
+    {
+        assert(idx < Length);
+        return this->data_[idx];
+    }
+
+    ///
+    /// Returns a const reference to the element at idx position in data.
+    /// Bounds check runtime.
+    CUTE_DEV_HOST [[nodiscard]] constexpr const T& at_ref(const int32_t idx) const
+    {
+        assert(idx < Length);
+        return this->data_[idx];
+    }
+
+    ///
     /// Returns the value at idx position in data.
     /// Bounds check compile-time.
     template <int32_t Idx>
-    CUTE_DEV_HOST constexpr T at() const noexcept
-    {
-        static_assert(Idx < Length, "Out of bounds");
-        return this->data_[Idx];
-    }
-    /// Returns a reference to the element at idx position in data.
-    /// Bounds check compile-time.
-    template <int32_t Idx>
-    CUTE_DEV_HOST constexpr T& at_ref() noexcept
-    {
-        static_assert(Idx < Length, "Out of bounds");
-        return this->data_[Idx];
-    }
-    /// Returns a const reference to the element at idx position in data.
-    /// Bounds check compile-time.
-    template <int32_t Idx>
-    CUTE_DEV_HOST constexpr const T& at_ref() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr T at() const noexcept
     {
         static_assert(Idx < Length, "Out of bounds");
         return this->data_[Idx];
     }
 
-    CUTE_DEV_HOST constexpr bool operator==(const Array<T, Length>& other) const noexcept
+    ///
+    /// Returns a reference to the element at idx position in data.
+    /// Bounds check compile-time.
+    template <int32_t Idx>
+    CUTE_DEV_HOST [[nodiscard]] constexpr T& at_ref() noexcept
+    {
+        static_assert(Idx < Length, "Out of bounds");
+        return this->data_[Idx];
+    }
+
+    ///
+    /// Returns a const reference to the element at idx position in data.
+    /// Bounds check compile-time.
+    template <int32_t Idx>
+    CUTE_DEV_HOST [[nodiscard]] constexpr const T& at_ref() const noexcept
+    {
+        static_assert(Idx < Length, "Out of bounds");
+        return this->data_[Idx];
+    }
+
+    ///
+    /// Return true if all the elements this and other are equal
+    CUTE_DEV_HOST [[nodiscard]] constexpr bool operator==(const Array<T, Length>& other) const noexcept
     {
         auto res = true;
         for (auto i = 0; i < Length; i++)
@@ -107,18 +132,22 @@ class Array
         return res;
     }
 
-    CUTE_DEV_HOST constexpr bool operator!=(const Array<T, Length>& other) const noexcept
+    ///
+    /// Return true if one of the elements of this and other are not equal
+    CUTE_DEV_HOST [[nodiscard]] constexpr bool operator!=(const Array<T, Length>& other) const noexcept
     {
         auto res = true;
         for (auto i = 0; i < Length; i++)
         {
-            res &= this->data_[i] != other.data_[i];
+            res &= this->data_[i] == other.data_[i];
         }
-        return res;
+        return !res;
     }
 
+    ///
+    /// Compute the sum of the elements of this
     template <typename AccumulatorT = T>
-    CUTE_DEV_HOST constexpr AccumulatorT sum() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr AccumulatorT sum() const noexcept
     {
         auto accum = AccumulatorT(0);
         for (auto i = 0; i < Length; i++)
@@ -128,7 +157,9 @@ class Array
         return accum;
     }
 
-    CUTE_DEV_HOST constexpr Array<T, Length> sum(const Array<T, Length>& other) const noexcept
+    ///
+    /// Computes the elementwise summation of this and other.
+    CUTE_DEV_HOST [[nodiscard]] constexpr Array<T, Length> sum(const Array<T, Length>& other) const noexcept
     {
         auto res = Array<T, Length>();
         for (auto i = 0; i < Length; i++)
@@ -138,7 +169,9 @@ class Array
         return res;
     }
 
-    CUTE_DEV_HOST constexpr Array<T, Length> negate() const noexcept
+    ///
+    /// Negates each elements of this.
+    CUTE_DEV_HOST [[nodiscard]] constexpr Array<T, Length> negate() const noexcept
     {
         auto res = Array<T, Length>();
         for (auto i = 0; i < Length; i++)
@@ -148,8 +181,10 @@ class Array
         return res;
     }
 
+    ///
+    /// Casts the elements of the array to the templated type OtherT
     template <typename OtherT>
-    CUTE_DEV_HOST constexpr Array<OtherT, Length> cast() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr Array<OtherT, Length> cast() const noexcept
     {
         auto res = Array<OtherT, Length>();
         for (auto i = 0; i < Length; i++)
@@ -159,29 +194,21 @@ class Array
         return res;
     }
 
-    template <typename AccumulatorT = T>
-    CUTE_DEV_HOST constexpr AccumulatorT product() const noexcept
+    ///
+    /// Multiplies each elements of this with the input scalar
+    CUTE_DEV_HOST [[nodiscard]] constexpr Array<T, Length> product(const T& scalar) const noexcept
     {
-        auto accum = AccumulatorT(1);
+        auto res = Array<T, Length>();
         for (auto i = 0; i < Length; i++)
         {
-            accum *= this->data_[i];
+            res[i] = this->data_[i] * scalar;
         }
-        return accum;
+        return res;
     }
 
-    template <typename AccumulatorT = T>
-    CUTE_DEV_HOST constexpr AccumulatorT inner_product(const Array<T, Length>& other) const noexcept
-    {
-        auto accum = AccumulatorT(0);
-        for (auto i = 0; i < Length; i++)
-        {
-            accum += this->data_[i] * other.data_[i];
-        }
-        return accum;
-    }
-
-    CUTE_DEV_HOST constexpr Array<T, Length> outer_product(const Array<T, Length>& other) const noexcept
+    ///
+    /// The elementwise product of the elements of this and other
+    CUTE_DEV_HOST [[nodiscard]] constexpr Array<T, Length> product(const Array<T, Length>& other) const noexcept
     {
         auto res = Array<T, Length>();
         for (auto i = 0; i < Length; i++)
@@ -191,8 +218,36 @@ class Array
         return res;
     }
 
+    ///
+    /// Multiplies the elements of the array with each other (return 1 * elem[0] * elem[1]...)
+    template <typename AccumulatorT = T>
+    CUTE_DEV_HOST [[nodiscard]] constexpr AccumulatorT mul() const noexcept
+    {
+        auto accum = AccumulatorT(1);
+        for (auto i = 0; i < Length; i++)
+        {
+            accum *= this->data_[i];
+        }
+        return accum;
+    }
+
+    ///
+    /// Compute the dot product between this and other arrays.
+    template <typename AccumulatorT = T>
+    CUTE_DEV_HOST [[nodiscard]] constexpr AccumulatorT dot_product(const Array<T, Length>& other) const noexcept
+    {
+        auto accum = AccumulatorT(0);
+        for (auto i = 0; i < Length; i++)
+        {
+            accum += this->data_[i] * other.data_[i];
+        }
+        return accum;
+    }
+
+    ///
+    /// Skip the first N elements of the array, indicated by the template parameter SkipN
     template <int32_t SkipN>
-    CUTE_DEV_HOST constexpr Array<T, Length - SkipN> skip() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr Array<T, Length - SkipN> skip() const noexcept
     {
         constexpr auto NewLength = Length - SkipN;
         static_assert(NewLength > 0, "Cannot skip more items than available");
@@ -205,8 +260,10 @@ class Array
         return res;
     }
 
+    ///
+    /// Take the first N elements of the array, indicated by the template parameter TakeN
     template <int32_t TakeN>
-    CUTE_DEV_HOST constexpr Array<T, TakeN> take() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr Array<T, TakeN> take() const noexcept
     {
         static_assert(TakeN <= Length, "Cannot take more items than available");
 
@@ -218,8 +275,10 @@ class Array
         return res;
     }
 
+    ///
+    /// Drops the element at the templated index DropIdx
     template <int32_t DropIdx>
-    CUTE_DEV_HOST constexpr Array<T, Length - 1> drop() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr Array<T, Length - 1> drop() const noexcept
     {
         constexpr auto NewLength = Length - 1;
         static_assert(DropIdx < Length, "Cannot drop index larger than length");
@@ -238,18 +297,16 @@ class Array
     }
 };
 
+///
+/// Variadic template for creating an array instead of relying on list initialization
 template <typename T, typename... Args>
 [[nodiscard]] constexpr auto array(T first, Args... args)
 {
-    return Array<T, sizeof...(Args) + 1>{ first, args... };
+    return Array<T, sizeof...(Args) + 1>{ std::move(first), std::move(args)... };
 }
 
-template <typename T, int32_t Length>
-[[nodiscard]] constexpr auto array(Array<T, Length> arr)
-{
-    return arr;
-}
-
+///
+/// Stream the array, with elem_breaker as the seperator in addition to ','
 template <typename T, int32_t Length>
 std::ostream& stream_array(std::ostream& stream, const Array<T, Length>& arr, char elem_breaker = ' ')
 {

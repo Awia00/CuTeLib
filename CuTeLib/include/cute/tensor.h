@@ -31,8 +31,7 @@ class Tensor
 
     public:
     explicit Tensor(Array<shape_type, RankV> shape) noexcept
-      : data_(cute::make_unique<T[], HardwareV>(shape.template product<size_type>()))
-      , shape_(std::move(shape))
+      : data_(cute::make_unique<T[], HardwareV>(shape.template mul<size_type>())), shape_(std::move(shape))
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
@@ -41,8 +40,7 @@ class Tensor
     }
 
     Tensor(const std::vector<T>& vec, Array<shape_type, RankV> shape) noexcept
-      : data_(cute::make_unique<T[], HardwareV>(shape.template product<size_type>()))
-      , shape_(std::move(shape))
+      : data_(cute::make_unique<T[], HardwareV>(shape.template mul<size_type>())), shape_(std::move(shape))
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
@@ -53,7 +51,7 @@ class Tensor
     // Templated copy constructor
     template <typename OtherTensorT>
     explicit Tensor(const OtherTensorT& other_tensor) noexcept
-      : data_(cute::make_unique<T[], HardwareV>(other_tensor.get_shape().template product<size_type>()))
+      : data_(cute::make_unique<T[], HardwareV>(other_tensor.get_shape().template mul<size_type>()))
       , shape_(other_tensor.get_shape())
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
@@ -62,7 +60,8 @@ class Tensor
         memcpy(other_tensor.data_ptr(), this->data_, other_tensor.size());
     }
 
-    // Templated copy assignment
+    ///
+    /// Templated copy assignment
     template <typename OtherTensorT>
     MyT& operator=(const OtherTensorT& other_tensor) noexcept
     {

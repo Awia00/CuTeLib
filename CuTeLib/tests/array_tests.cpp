@@ -30,11 +30,11 @@ TEST_SUITE("Array")
         CHECK(i32_arr.skip<2>() == Array<int32_t, 1>{ 2 });
     }
 
-    TEST_CASE("product")
+    TEST_CASE("mul")
     {
-        CHECK(array(1).product() == 1);
-        CHECK(array(1, 10).product() == 10);
-        CHECK(array(1, 10, 100).product() == 1000);
+        CHECK(array(1).mul() == 1);
+        CHECK(array(1, 10).mul() == 10);
+        CHECK(array(1, 10, 100).mul() == 1000);
     }
 
     TEST_CASE("sum")
@@ -51,11 +51,11 @@ TEST_SUITE("Array")
         CHECK(array(1, 10, 100).sum(array(1, 10, 100)) == array(2, 20, 200));
     }
 
-    TEST_CASE("inner_product")
+    TEST_CASE("dot_product")
     {
-        CHECK(array(1).inner_product(array(1)) == 1);
-        CHECK(array(1, 10).inner_product(array(1, 10)) == 101);
-        CHECK(array(1, 10, 100).inner_product(array(1, 10, 100)) == 10101);
+        CHECK(array(1).dot_product(array(1)) == 1);
+        CHECK(array(1, 10).dot_product(array(1, 10)) == 101);
+        CHECK(array(1, 10, 100).dot_product(array(1, 10, 100)) == 10101);
     }
 
     TEST_CASE("negate")

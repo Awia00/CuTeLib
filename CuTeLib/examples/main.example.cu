@@ -24,9 +24,9 @@ inline void array_examples()
     // Example 02
     const auto i64_arr = Array<int64_t, 3>{ 1, 10, 100 };
     stream_array(std::cout << "i64_arr: ", i64_arr) << std::endl;
-    std::cout << "product(): " << i64_arr.product() << std::endl;
+    std::cout << "product(): " << i64_arr.mul() << std::endl;
     std::cout << "sum(): " << i64_arr.sum() << std::endl;
-    std::cout << "inner_product(self): " << i64_arr.inner_product(i64_arr) << std::endl;
+    std::cout << "inner_product(self): " << i64_arr.dot_product(i64_arr) << std::endl;
     std::cout << std::endl;
 }
 
@@ -49,7 +49,7 @@ inline void unique_ptr_examples()
     //   Also notice that the template parameter T in unique_ptr is the array version T[].
     // You can also use the alias HardwareUniquePtr<T, Hardware>.
 
-    // Both ofcourse gets deleted when running out of scope.
+    // Both of course gets deleted when running out of scope.
 }
 
 inline void tensor_span_examples()
@@ -63,7 +63,7 @@ inline void tensor_span_examples()
     std::cout << "vector_span.elem(64):\t" << vector_span.elem(64) << std::endl; // prints 10
 
     auto matrix_span = get_span_of(cpu_data, shape(2, 64));
-    std::cout << "matrix_span.elem(1,0):\t" << matrix_span.elem(1, 0) << std::endl; // prints 10
+    std::cout << "matrix_span.elem(1, 0):\t" << matrix_span.elem(1, 0) << std::endl; // prints 10
     auto second_row_span = matrix_span[1];
     std::cout << "matrix_span[1].elem(0):\t" << second_row_span.elem(0) << std::endl; // prints 10
 
