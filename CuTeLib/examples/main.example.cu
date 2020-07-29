@@ -13,21 +13,30 @@ namespace cute
 
 inline void array_examples()
 {
-    // Example 01
-    const auto i32_arr = Array<int32_t, 3>{ 0, 1, 2 };
-    stream_array(std::cout << "i32_arr: ", i32_arr) << std::endl;
-    stream_array(std::cout << "drop<1>: ", i32_arr.drop<1>()) << std::endl;
-    stream_array(std::cout << "take<1>: ", i32_arr.take<1>()) << std::endl;
-    stream_array(std::cout << "skip<1>: ", i32_arr.skip<1>()) << std::endl;
-    std::cout << std::endl;
+    /// example_id="array_examples_01"
+    {
+        const auto i32_arr = Array<int32_t, 3>{ 0, 1, 2 };
 
-    // Example 02
-    const auto i64_arr = Array<int64_t, 3>{ 1, 10, 100 };
-    stream_array(std::cout << "i64_arr: ", i64_arr) << std::endl;
-    std::cout << "product(): " << i64_arr.mul() << std::endl;
-    std::cout << "sum(): " << i64_arr.sum() << std::endl;
-    std::cout << "inner_product(self): " << i64_arr.dot_product(i64_arr) << std::endl;
-    std::cout << std::endl;
+        // arrays can also be created with the variadic template function: array
+        assert(i32_arr == array(0, 1, 2));
+
+        // array has a number of utility functions
+        assert(i32_arr.take<1>() == array(0));
+        assert(i32_arr.skip<1>() == array(1, 2));
+        assert(i32_arr.drop<1>() == array(0, 2));
+
+        // You can print arrays using the stream_array function:
+        stream_array(std::cout, i32_arr) << std::endl; // [0, 1, 2]
+    }
+
+    /// example_id="array_examples_02"
+    {
+        const auto i64_arr = Array<int64_t, 3>{ 1, 10, 100 };
+
+        assert(i64_arr.mul() == 1 * 10 * 100);
+        assert(i64_arr.sum() == 1 + 10 + 100);
+        assert(i64_arr.dot_product(i64_arr) == 1 + 100 + 10000);
+    }
 }
 
 inline void unique_ptr_examples()
