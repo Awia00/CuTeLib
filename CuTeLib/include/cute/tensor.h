@@ -14,6 +14,11 @@ struct TensorTraits
     using index_type = int32_t;
 };
 
+///
+/// A Tensor is a multidimensional data container.
+/// To access its elements, call get_span().
+/// Tensors are either CPU or GPU, therefore you can create type safe functions and overload which will work for either GPU or CPU functions.
+///
 template <typename T, int32_t RankV, Hardware HardwareV, typename Traits = TensorTraits>
 class Tensor
 {
@@ -79,9 +84,8 @@ class Tensor
         return *this;
     }
 
-    // copy constructor
     Tensor(const MyT& other_tensor) noexcept
-      : data_(cute::make_unique<T[], HardwareV>(other_tensor.get_shape().template product<size_type>()))
+      : data_(cute::make_unique<T[], HardwareV>(other_tensor.get_shape().template mul<size_type>()))
       , shape_(other_tensor.get_shape())
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
@@ -89,7 +93,6 @@ class Tensor
 
         memcpy(other_tensor.data_ptr(), this->data_, other_tensor.size());
     };
-    // copy assignment
     MyT& operator=(const MyT& other_tensor) noexcept
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
@@ -106,13 +109,12 @@ class Tensor
         return *this;
     };
 
-    // move is not defined for other tensor types
     Tensor(MyT&& other_tensor) noexcept = default;
     MyT& operator=(MyT&& other_tensor) noexcept = default;
 
     /// Transfer copies this tensor to the specified hardware
     template <Hardware ToHardwareV>
-    auto transfer() const noexcept
+    [[nodiscard]] constexpr auto transfer() const noexcept
     {
         return Tensor<T, RankV, ToHardwareV, Traits>(*this);
     }
@@ -126,81 +128,89 @@ class Tensor
         return RankV;
     }
 
-    bool empty() const noexcept
+    [[nodiscard]] constexpr bool empty() const noexcept
     {
-        return this->shape_.empty();
+        return this->size() == 0;
     }
 
-    size_t size() const noexcept
+    [[nodiscard]] constexpr size_t size() const noexcept
     {
-        return this->shape_.template product<size_t>();
+        return this->shape_.template mul<size_t>();
     }
 
-    const Array<shape_type, RankV>& get_shape() const noexcept
+    [[nodiscard]] constexpr const Array<shape_type, RankV>& get_shape() const noexcept
     {
         return this->shape_;
     }
 
-    shape_type shape(int32_t dim) const noexcept
+    [[nodiscard]] constexpr shape_type shape(int32_t dim) const noexcept
     {
         return this->shape_[dim];
     }
 
     template <int32_t Idx>
-    shape_type shape() const noexcept
+    [[nodiscard]] constexpr shape_type shape() const noexcept
     {
         return this->shape_.template at<Idx>();
     }
 
-    T* data() noexcept
+    [[nodiscard]] constexpr T* data() noexcept
     {
         return this->data_.get();
     }
-    const T* data() const noexcept
+    [[nodiscard]] constexpr const T* data() const noexcept
     {
         return this->data_.get();
     }
 
-    T* begin() noexcept
+    ///
+    /// @warning: raw pointer return, could be a GPU pointer. Express caution.
+    [[nodiscard]] constexpr T* begin() noexcept
     {
         return this->data();
     }
 
-    T* end() noexcept
+    ///
+    /// @warning: raw pointer return, could be a GPU pointer. Express caution.
+    [[nodiscard]] constexpr T* end() noexcept
     {
         return this->data() + this->size();
     }
 
-    const T* begin() const noexcept
+    ///
+    /// @warning: raw pointer return, could be a GPU pointer. Express caution.
+    [[nodiscard]] constexpr const T* begin() const noexcept
     {
         return this->data();
     }
 
-    const T* end() const noexcept
+    ///
+    /// @warning: raw pointer return, could be a GPU pointer. Express caution.
+    [[nodiscard]] constexpr const T* end() const noexcept
     {
         return this->data() + this->size();
     }
 
-    const HardwareUniquePtr<T[], HardwareV>& data_ptr() const noexcept
+    [[nodiscard]] constexpr const HardwareUniquePtr<T[], HardwareV>& data_ptr() const noexcept
     {
         return this->data_;
     }
 
-    TensorSpan<T, RankV, HardwareV> get_span() noexcept
+    [[nodiscard]] constexpr TensorSpan<T, RankV, HardwareV> get_span() noexcept
     {
         return get_span_of(this->data_, this->shape_);
     }
 
-    TensorSpan<const T, RankV, HardwareV> get_span() const noexcept
+    [[nodiscard]] constexpr TensorSpan<const T, RankV, HardwareV> get_span() const noexcept
     {
         return get_span_of(this->data_, this->shape_);
     }
 
-    operator TensorSpan<T, RankV, HardwareV>() noexcept
+    [[nodiscard]] constexpr operator TensorSpan<T, RankV, HardwareV>() noexcept
     {
         return this->get_span();
     }
-    operator TensorSpan<const T, RankV, HardwareV>() const noexcept
+    [[nodiscard]] constexpr operator TensorSpan<const T, RankV, HardwareV>() const noexcept
     {
         return this->get_span();
     }

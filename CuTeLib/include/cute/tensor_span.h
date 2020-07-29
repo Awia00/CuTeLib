@@ -13,8 +13,15 @@ struct TensorSpanTraits
     using index_type = int32_t;
 };
 
+namespace
+{
+
+///
+/// The TensorSpanBase is here to provide common functionality for Rank 1 and higher. No reason to
+/// use this class for outside of cute - use the Specific TensorSpans below instead
+///
 template <typename T, int32_t RankV, Hardware HardwareV, typename Traits = TensorSpanTraits>
-class TensorSpanBase
+class [[nodiscard]] TensorSpanBase
 {
     public:
     using shape_type = typename Traits::shape_type;
@@ -27,7 +34,7 @@ class TensorSpanBase
     Array<shape_type, RankV> shape_;
 
     // Constructor is protected so you dont create it.
-    CUTE_DEV_HOST constexpr TensorSpanBase(T* data, Array<shape_type, RankV> shape)
+    CUTE_DEV_HOST constexpr TensorSpanBase(T * data, Array<shape_type, RankV> shape)
       : data_(data), shape_(std::move(shape))
     {
     }
@@ -88,7 +95,8 @@ class TensorSpanBase
     }
 
     template <int32_t DimV, typename... Args>
-    CUTE_DEV_HOST [[nodiscard]] constexpr index_type index(index_type index_sum, index_type index, Args... args) const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr index_type index(index_type index_sum, index_type index, Args... args)
+        const noexcept
     {
         static_assert(DimV < RankV, "DimV was more than RankV-1");
         static_assert(DimV >= 0, "DimV was less than 0");
@@ -98,8 +106,11 @@ class TensorSpanBase
     }
 };
 
+} // namespace
+
+
 template <typename T, int32_t RankV, Hardware HardwareV, typename Traits = TensorSpanTraits>
-class TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
+class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
 {
     public:
     using SuperT = TensorSpanBase<T, RankV, HardwareV, Traits>;
@@ -108,7 +119,7 @@ class TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
     using index_type = typename Traits::index_type;
     using value_type = typename T;
 
-    CUTE_DEV_HOST constexpr TensorSpan(T* data, Array<shape_type, RankV> shape)
+    CUTE_DEV_HOST constexpr TensorSpan(T * data, Array<shape_type, RankV> shape)
       : SuperT(data, std::move(shape))
     {
     }
@@ -116,7 +127,6 @@ class TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
     template <typename... Args>
     CUTE_DEV_HOST [[nodiscard]] constexpr T elem(Args... args) const noexcept
     {
-        ENSURE_CORRECT_HARDWARE(HardwareV);
         static_assert(sizeof...(Args) == RankV, "One argument per dimension");
 
         return this->data_[this->index<0>(0, args...)];
@@ -125,13 +135,13 @@ class TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
     template <typename... Args>
     CUTE_DEV_HOST constexpr T& elem_ref(Args... args) const noexcept
     {
-        ENSURE_CORRECT_HARDWARE(HardwareV);
         static_assert(sizeof...(Args) == RankV, "One argument per dimension");
 
         return this->data_[this->index<0>(0, args...)];
     }
 
-    CUTE_DEV_HOST [[nodiscard]] constexpr TensorSpan<T, RankV - 1, HardwareV, Traits> operator[](index_type idx) const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr TensorSpan<T, RankV - 1, HardwareV, Traits> operator[](index_type idx)
+        const noexcept
     {
         auto offset = this->stride<0>() * idx;
         auto data_ptr = this->data_ + offset;
@@ -146,7 +156,7 @@ class TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
 };
 
 template <typename T, Hardware HardwareV, typename Traits>
-class TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, HardwareV, Traits>
+class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, HardwareV, Traits>
 {
     public:
     using SuperT = TensorSpanBase<T, 1, HardwareV, Traits>;
@@ -155,7 +165,7 @@ class TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, Ha
     using index_type = typename Traits::index_type;
     using value_type = typename T;
 
-    CUTE_DEV_HOST constexpr TensorSpan(T* data, Array<shape_type, 1> shape)
+    CUTE_DEV_HOST constexpr TensorSpan(T * data, Array<shape_type, 1> shape)
       : SuperT(data, std::move(shape))
     {
     }
@@ -163,7 +173,6 @@ class TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, Ha
     template <typename... Args>
     CUTE_DEV_HOST [[nodiscard]] constexpr T elem(Args... args) const noexcept
     {
-        ENSURE_CORRECT_HARDWARE(HardwareV);
         static_assert(sizeof...(Args) == 1, "One argument per dimension");
 
         return this->data_[this->index<0>(0, args...)];
@@ -172,7 +181,6 @@ class TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, Ha
     template <typename... Args>
     CUTE_DEV_HOST constexpr T& elem_ref(Args... args) const noexcept
     {
-        ENSURE_CORRECT_HARDWARE(HardwareV);
         static_assert(sizeof...(Args) == 1, "One argument per dimension");
 
         return this->data_[this->index<0>(0, args...)];
@@ -180,7 +188,6 @@ class TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, Ha
 
     CUTE_DEV_HOST constexpr T& operator[](index_type idx) const noexcept
     {
-        ENSURE_CORRECT_HARDWARE(HardwareV);
         return this->elem_ref(idx);
     }
 
