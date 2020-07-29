@@ -4,14 +4,29 @@ Builds and installs the project
 
 import subprocess
 import os
+import shutil
 
 
-def build_cpp():
+def ensure_build_type(build_type):
+    values = {
+        "debug": "Debug",
+        "release": "Release",
+        "relwithdebinfo": "RelWithDebInfo"
+    }
+    return values[build_type.lower()]
+
+
+def build_cpp(args):
     print("Starting build_cpp...")
+
     try:
-        build_type = "Debug"
+        build_type = ensure_build_type(args.build_type)
         build_folder = "build"
         install_folder = "inst"
+
+        if args.fresh:
+            shutil.rmtree(build_folder, ignore_errors=True)
+            shutil.rmtree(install_folder, ignore_errors=True)
 
         cmake_cmd = [
             "cmake",
@@ -35,22 +50,29 @@ def build_cpp():
             "--config",
             build_type,
         ]
+
+        print(f"Running: {cmake_cmd}")
         subprocess.check_call(cmake_cmd)
+
+        print(f"Running: {build_cmd}")
         subprocess.check_call(build_cmd)
+
+        print(f"Running: {install_cmd}")
         subprocess.check_call(install_cmd)
     except subprocess.CalledProcessError as err:
         print(err)
-        raise
+        raise err
     print("build_cpp success\n")
 
 
 def build_docs(doc_path: str):
     print("Starting build_docs...")
     try:
+        assert os.path.exists(doc_path), "code_path did not exist"
         subprocess.call(["python", f"{doc_path}/build.py"])
     except subprocess.CalledProcessError as err:
         print(err)
-        raise
+        raise err
     print("build_docs success\n")
 
 
@@ -58,25 +80,24 @@ def parse_arguments():
     import argparse
 
     parser = argparse.ArgumentParser(description='Build the cutelib wiki')
-    parser.add_argument('-d',
-                        '--doc_path',
-                        default="../CuTeLib.wiki",
-                        help="path to the doc repo")
+    parser.add_argument('-f',
+                        '--fresh',
+                        action='store_true',
+                        help='Cleanup binary and temporary folders')
+    parser.add_argument('--build_type', default='Debug', help='Build Type')
+    parser.add_argument('-d', '--doc_path', help="Path to the doc repo")
 
     return parser.parse_args()
 
 
-def ensure_arguments(args):
-    assert os.path.exists(args.doc_path), "code_path did not exist"
-
-
 def run():
     args = parse_arguments()
-    ensure_arguments(args)
 
-    build_cpp()
-    build_docs(args.doc_path)
+    build_cpp(args)
+    if args.doc_path:
+        build_docs(args.doc_path)
 
 
+# For official build run with: python build.py --build_type=Release --fresh --doc_path=../CuTeLib.wiki
 if __name__ == "__main__":
     run()
