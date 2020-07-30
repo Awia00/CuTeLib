@@ -11,27 +11,58 @@
 namespace cute
 {
 
+
+namespace /// example_id="cutelib_introduction"
+{
+#include <cuda.h>
+#include <cute/array.h>
+#include <cute/tensor.h>
+#include <cute/tensor_span.h>
+#include <cute/tensor_utils.h>
+#include <cute/unique_ptr.h>
+
+__global__ void simple_mul_kernel(cute::TensorSpan<const float, 1, Hardware::GPU> x,
+                                  cute::TensorSpan<const float, 1, Hardware::GPU> y,
+                                  cute::TensorSpan<float, 1, Hardware::GPU> out)
+{
+    const auto idx = threadIdx.x + blockDim.x * blockIdx.x;
+    if (idx < x.shape<0>()) // idx is valid.
+    {
+        out[idx] = x[idx] * y[idx];
+    }
+}
+
+inline void cutelib_intro()
+{
+    const auto x = cute::iota<float>(shape(32)).transfer<Hardware::GPU>();
+    const auto y = cute::random<float>(shape(32)).transfer<Hardware::GPU>();
+    auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));
+    simple_mul_kernel<<<1, 128>>>(x.get_span(), y.get_span(), out.get_span());
+}
+
+} // namespace
+
 inline void array_examples()
 {
-    /// example_id="array_examples_01"
+    /// example_id="array_basics"
     {
-        const auto i32_arr = Array<int32_t, 3>{ 0, 1, 2 };
+        const auto i32_arr = cute::Array<int32_t, 3>{ 0, 1, 2 };
 
         // arrays can also be created with the variadic template function: array
-        assert(i32_arr == array(0, 1, 2));
+        assert(i32_arr == cute::array(0, 1, 2));
 
         // array has a number of utility functions
-        assert(i32_arr.take<1>() == array(0));
-        assert(i32_arr.skip<1>() == array(1, 2));
-        assert(i32_arr.drop<1>() == array(0, 2));
+        assert(i32_arr.take<1>() == cute::array(0));
+        assert(i32_arr.skip<1>() == cute::array(1, 2));
+        assert(i32_arr.drop<1>() == cute::array(0, 2));
 
         // You can print arrays using the stream_array function:
         stream_array(std::cout, i32_arr) << std::endl; // [0, 1, 2]
     }
 
-    /// example_id="array_examples_02"
+    /// example_id="array_numerics"
     {
-        const auto i64_arr = Array<int64_t, 3>{ 1, 10, 100 };
+        const auto i64_arr = cute::Array<int64_t, 3>{ 1, 10, 100 };
 
         assert(i64_arr.mul() == 1 * 10 * 100);
         assert(i64_arr.sum() == 1 + 10 + 100);
@@ -144,6 +175,7 @@ int main()
     std::cout << "CuTeLib examples: " << std::endl;
     std::cout << std::endl;
 
+    cute::cutelib_intro();
     cute::array_examples();
     cute::unique_ptr_examples();
     cute::tensor_span_examples();
