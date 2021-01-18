@@ -1,6 +1,7 @@
 #pragma once
 #include <assert.h>
 #include <cstdint>
+#include <type_traits>
 
 
 #if defined(__CUDA_ARCH__) || defined(__CUDACC__)
@@ -11,6 +12,7 @@
 #define CUTE_NVCC_HOST
 #endif
 
+// combine host and dev
 #define CUTE_DEV_HOST CUTE_NVCC_DEVICE CUTE_NVCC_HOST
 
 
@@ -37,3 +39,19 @@
 #define ENSURE_CUDA_COMPILER_IF_GPU(MACRO_HARDWARE_VALUE) \
     static_assert(MACRO_HARDWARE_VALUE == Hardware::CPU, "This function cannot be compiled without a CUDA compiler, make sure you template instantiate from a .cu file")
 #endif
+
+// Restrictiveness
+#if defined(__CUDA_ARCH__) || defined(__CUDACC__)
+#define CUTE_RESTRICT __restrict__
+#else
+#define CUTE_RESTRICT __restrict
+#endif
+
+
+namespace cute
+{
+
+template <typename T, bool RestrictedV>
+using restricted_ptr = typename std::conditional<RestrictedV, T * CUTE_RESTRICT, T*>::type;
+
+} // namespace cute

@@ -6,11 +6,17 @@
 
 namespace cute
 {
+
+
 struct TensorSpanTraits
 {
     using shape_type = int32_t;
     using size_type = int64_t;
     using index_type = int32_t;
+    constexpr static bool is_rescricted()
+    {
+        return false;
+    }
 };
 
 namespace
@@ -28,13 +34,14 @@ class [[nodiscard]] TensorSpanBase
     using size_type = typename Traits::size_type;
     using index_type = typename Traits::index_type;
     using value_type = typename T;
+    using ptr_type = typename restricted_ptr<T, Traits::is_rescricted()>;
 
     protected:
-    T* data_;
+    ptr_type data_;
     Array<shape_type, RankV> shape_;
 
     // Constructor is protected so you dont create it.
-    CUTE_DEV_HOST constexpr TensorSpanBase(T * data, Array<shape_type, RankV> shape)
+    CUTE_DEV_HOST constexpr TensorSpanBase(T* data, Array<shape_type, RankV> shape)
       : data_(data), shape_(std::move(shape))
     {
     }
@@ -49,14 +56,19 @@ class [[nodiscard]] TensorSpanBase
         return RankV;
     }
 
+    CUTE_DEV_HOST [[nodiscard]] constexpr ptr_type data() const noexcept
+    {
+        return this->data_;
+    }
+
     CUTE_DEV_HOST [[nodiscard]] constexpr bool empty() const noexcept
     {
         return this->shape_.empty();
     }
 
-    CUTE_DEV_HOST [[nodiscard]] constexpr size_t size() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr size_type size() const noexcept
     {
-        return this->shape_.template product<size_t>();
+        return this->shape_.template mul<size_type>();
     }
 
     CUTE_DEV_HOST [[nodiscard]] constexpr const Array<shape_type, RankV>& get_shape() const noexcept
@@ -95,8 +107,7 @@ class [[nodiscard]] TensorSpanBase
     }
 
     template <int32_t DimV, typename... Args>
-    CUTE_DEV_HOST [[nodiscard]] constexpr index_type index(index_type index_sum, index_type index, Args... args)
-        const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr index_type index(index_type index_sum, index_type index, Args... args) const noexcept
     {
         static_assert(DimV < RankV, "DimV was more than RankV-1");
         static_assert(DimV >= 0, "DimV was less than 0");
@@ -119,7 +130,7 @@ class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV
     using index_type = typename Traits::index_type;
     using value_type = typename T;
 
-    CUTE_DEV_HOST constexpr TensorSpan(T * data, Array<shape_type, RankV> shape)
+    CUTE_DEV_HOST constexpr TensorSpan(T* data, Array<shape_type, RankV> shape)
       : SuperT(data, std::move(shape))
     {
     }
@@ -140,8 +151,7 @@ class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV
         return this->data_[this->index<0>(0, args...)];
     }
 
-    CUTE_DEV_HOST [[nodiscard]] constexpr TensorSpan<T, RankV - 1, HardwareV, Traits> operator[](index_type idx)
-        const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr TensorSpan<T, RankV - 1, HardwareV, Traits> operator[](index_type idx) const noexcept
     {
         auto offset = this->stride<0>() * idx;
         auto data_ptr = this->data_ + offset;

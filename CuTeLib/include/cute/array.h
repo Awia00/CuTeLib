@@ -4,12 +4,18 @@
 
 namespace cute
 {
+struct ArrayTraits
+{
+    using size_type = int32_t;
+    using index_type = int32_t;
+};
 
-template <typename T, int32_t Length>
+template <typename T, int32_t Length, typename Traits = ArrayTraits>
 struct Array
 {
-    using value_type = T;
-    using size_type = int32_t;
+    using value_type = typename T;
+    using size_type = typename ArrayTraits::size_type;
+    using index_type = typename ArrayTraits::index_type;
 
     T data_[Length];
 
@@ -18,14 +24,14 @@ struct Array
 
     ///
     /// Returns true if length is 0 or below
-    constexpr static bool empty() noexcept
+    CUTE_DEV_HOST constexpr static bool empty() noexcept
     {
         return Length <= 0;
     }
 
     ///
     /// Returns the size of the array - that is the Length template
-    constexpr static int32_t size() noexcept
+    CUTE_DEV_HOST constexpr static size_type size() noexcept
     {
         return Length;
     }
@@ -50,7 +56,7 @@ struct Array
     ///
     /// Returns a const reference to the element at idx position.
     /// No bounds check
-    CUTE_DEV_HOST [[nodiscard]] constexpr T& operator[](const int32_t idx) noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr T& operator[](const index_type idx) noexcept
     {
         return this->data_[idx];
     }
@@ -58,7 +64,7 @@ struct Array
     ///
     /// Returns a reference to the element at idx position.
     /// No bounds check
-    CUTE_DEV_HOST [[nodiscard]] constexpr const T& operator[](const int32_t idx) const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr const T& operator[](const index_type idx) const noexcept
     {
         return this->data_[idx];
     }
@@ -66,7 +72,7 @@ struct Array
     ///
     /// Returns the value at idx position in data.
     /// Bounds check runtime.
-    CUTE_DEV_HOST [[nodiscard]] constexpr T at(const int32_t idx) const
+    CUTE_DEV_HOST [[nodiscard]] constexpr T at(const index_type idx) const
     {
         assert(idx < Length);
         return this->data_[idx];
@@ -75,7 +81,7 @@ struct Array
     ///
     /// Returns a reference to the element at idx position in data.
     /// Bounds check runtime.
-    CUTE_DEV_HOST [[nodiscard]] constexpr T& at_ref(const int32_t idx)
+    CUTE_DEV_HOST [[nodiscard]] constexpr T& at_ref(const index_type idx)
     {
         assert(idx < Length);
         return this->data_[idx];
@@ -84,7 +90,7 @@ struct Array
     ///
     /// Returns a const reference to the element at idx position in data.
     /// Bounds check runtime.
-    CUTE_DEV_HOST [[nodiscard]] constexpr const T& at_ref(const int32_t idx) const
+    CUTE_DEV_HOST [[nodiscard]] constexpr const T& at_ref(const index_type idx) const
     {
         assert(idx < Length);
         return this->data_[idx];
