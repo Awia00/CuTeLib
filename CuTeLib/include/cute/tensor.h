@@ -216,6 +216,12 @@ class Tensor
     }
 };
 
+template <typename T, int32_t RankV, typename Traits>
+std::ostream& operator<<(std::ostream& stream, const Tensor<T, RankV, Hardware::CPU, Traits>& tensor)
+{
+    return stream << tensor.get_span();
+}
+
 
 template <typename T, Hardware HardwareV, typename Traits = TensorTraits>
 using Vector = Tensor<T, 1, HardwareV, Traits>;

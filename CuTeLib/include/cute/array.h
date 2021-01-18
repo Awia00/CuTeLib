@@ -301,6 +301,9 @@ struct Array
         }
         return res;
     }
+
+    template <typename T, int32_t Length, typename Traits>
+    friend std::ostream& operator<<(std::ostream&, const Array<T, Length, Traits>& arr);
 };
 
 ///
@@ -311,21 +314,19 @@ template <typename T, typename... Args>
     return Array<T, sizeof...(Args) + 1>{ std::move(first), std::move(args)... };
 }
 
-///
-/// Stream the array, with elem_breaker as the seperator in addition to ','
-template <typename T, int32_t Length>
-std::ostream& stream_array(std::ostream& stream, const Array<T, Length>& arr, char elem_breaker = ' ')
+template <typename T, int32_t Length, typename Traits>
+std::ostream& operator<<(std::ostream& stream, const Array<T, Length, Traits>& arr)
 {
-    stream << "[ ";
+    stream << "[";
     if (!arr.empty())
     {
         stream << arr.template at<0>();
     }
     for (auto i = 1; i < Length; i++)
     {
-        stream << "," << elem_breaker << arr[i];
+        stream << ", " << arr[i];
     }
-    stream << " ]";
+    stream << "]";
     return stream;
 }
 

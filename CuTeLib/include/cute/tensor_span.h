@@ -175,7 +175,7 @@ class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpa
     using index_type = typename Traits::index_type;
     using value_type = typename T;
 
-    CUTE_DEV_HOST constexpr TensorSpan(T * data, Array<shape_type, 1> shape)
+    CUTE_DEV_HOST constexpr TensorSpan(T* data, Array<shape_type, 1> shape)
       : SuperT(data, std::move(shape))
     {
     }
@@ -207,6 +207,38 @@ class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpa
     }
 };
 
+template <typename T, typename Traits>
+std::ostream& operator<<(std::ostream& stream, const TensorSpan<T, 1, Hardware::CPU, Traits>& tensor_span)
+{
+    stream << "[";
+    if (!tensor_span.empty())
+    {
+        stream << tensor_span.elem(0);
+    }
+    for (auto i = 1; i < tensor_span.template shape<0>(); i++)
+    {
+        stream << ", " << tensor_span.elem(i);
+    }
+    stream << "]";
+    return stream;
+}
+
+template <typename T, typename Traits>
+std::ostream& operator<<(std::ostream& stream, const TensorSpan<T, 2, Hardware::CPU, Traits>& tensor_span)
+{
+    stream << "[\n  ";
+    if (!tensor_span.empty())
+    {
+        stream << tensor_span[0];
+    }
+    for (auto i = 1; i < tensor_span.template shape<0>(); i++)
+    {
+        stream << ",\n  " << tensor_span[i];
+    }
+    stream << "\n]";
+
+    return stream;
+}
 
 template <typename T, Hardware HardwareV, typename Traits = TensorSpanTraits>
 using VectorSpan = TensorSpan<T, 1, HardwareV, Traits>;

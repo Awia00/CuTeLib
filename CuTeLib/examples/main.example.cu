@@ -26,7 +26,7 @@ __global__ void simple_mul_kernel(cute::TensorSpan<const float, 1, Hardware::GPU
                                   cute::TensorSpan<float, 1, Hardware::GPU> out)
 {
     const auto idx = threadIdx.x + blockDim.x * blockIdx.x;
-    if (idx < x.shape<0>()) // idx is valid.
+    if (idx < x.shape<0>()) // idx is valid given x's size on the first dimension
     {
         out[idx] = x[idx] * y[idx];
     }
@@ -34,10 +34,18 @@ __global__ void simple_mul_kernel(cute::TensorSpan<const float, 1, Hardware::GPU
 
 inline void cutelib_intro()
 {
+    // generate a iota 1d tensor (0,1,2,3,4,5) and transfer to GPU
     const auto x = cute::iota<float>(shape(32)).transfer<Hardware::GPU>();
+    // generate a 1d tensor with random values and trasnfer to GPU
     const auto y = cute::random<float>(shape(32)).transfer<Hardware::GPU>();
+    // Allocate a 1d tensor 0 initialized directly on the GPU
     auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));
+
+    // run kernel
     simple_mul_kernel<<<1, 128>>>(x.get_span(), y.get_span(), out.get_span());
+
+    // we can print and see the results
+    std::cout << out.transfer<Hardware::CPU>() << std::endl;
 }
 
 } // namespace
@@ -57,7 +65,7 @@ inline void array_examples()
         assert(i32_arr.drop<1>() == cute::array(0, 2));
 
         // You can print arrays using the stream_array function:
-        stream_array(std::cout, i32_arr) << std::endl; // [0, 1, 2]
+        std::cout << i32_arr << std::endl; // [0, 1, 2]
     }
 
     /// example_id="array_numerics"
@@ -166,6 +174,8 @@ void kernel_use_example()
     const auto y = iota<float>(shape(32)).transfer<Hardware::GPU>();
     auto out = Tensor<float, 1, Hardware::GPU>(shape(32));
     my_kernel<<<1, 128>>>(x.get_span(), y.get_span(), out.get_span());
+
+    std::cout << out.transfer<Hardware::CPU>() << std::endl;
 }
 
 } // namespace cute
