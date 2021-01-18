@@ -34,9 +34,9 @@ __global__ void simple_mul_kernel(cute::TensorSpan<const float, 1, Hardware::GPU
 
 inline void cutelib_intro()
 {
-    // generate a iota 1d tensor (0,1,2,3,4,5) and transfer to GPU
+    // generate a iota 1d tensor (0,1,2,...,32) and transfer to GPU
     const auto x = cute::iota<float>(shape(32)).transfer<Hardware::GPU>();
-    // generate a 1d tensor with random values and trasnfer to GPU
+    // generate a 1d tensor with random values and transfer to GPU
     const auto y = cute::random<float>(shape(32)).transfer<Hardware::GPU>();
     // Allocate a 1d tensor 0 initialized directly on the GPU
     auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));

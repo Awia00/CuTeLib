@@ -4,20 +4,40 @@
 
 The purpose of the **CU**DA **Te**mplate **Lib**rary is to provide constructs for better type safety and usability of CUDA code with no runtime overhead, both in kernels and in the calling host code.
 
-## Examples
-
-```c++
-// Can be used in host or device function
+```cpp
+#include <cuda.h>
 #include <cute/array.h>
+#include <cute/tensor.h>
+#include <cute/tensor_span.h>
+#include <cute/tensor_utils.h>
+#include <cute/unique_ptr.h>
 
-const auto i32_arr = cute::Array<int32_t, 3>{ 0, 1, 2 };
-i32_arr.drop<1>()); //  Array<int32_t, 2>{ 0, 2 }
-i32_arr.take<1>()); //  Array<int32_t, 1>{ 0 }
-i32_arr.skip<1>()); //  Array<int32_t, 2>{ 1, 2 }
+__global__ void simple_mul_kernel(cute::TensorSpan<const float, 1, Hardware::GPU> x,
+                                  cute::TensorSpan<const float, 1, Hardware::GPU> y,
+                                  cute::TensorSpan<float, 1, Hardware::GPU> out)
+{
+    const auto idx = threadIdx.x + blockDim.x * blockIdx.x;
+    if (idx < x.shape<0>()) // idx is valid given x's size on the first dimension
+    {
+        out[idx] = x[idx] * y[idx];
+    }
+}
 
-const auto i64_arr = cute::Array<int64_t, 3>{ 1, 10, 100 };
-i64_arr.product();              // 1000
-i64_arr.sum();                  // 111
-i64_arr.inner_product(i64_arr); // 10101
+inline void cutelib_intro()
+{
+    // generate a iota 1d tensor (0,1,2,...,32) and transfer to GPU
+    const auto x = cute::iota<float>(shape(32)).transfer<Hardware::GPU>();
+    // generate a 1d tensor with random values and transfer to GPU
+    const auto y = cute::random<float>(shape(32)).transfer<Hardware::GPU>();
+    // Allocate a 1d tensor 0 initialized directly on the GPU
+    auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));
 
+    // run kernel
+    simple_mul_kernel<<<1, 128>>>(x.get_span(), y.get_span(), out.get_span());
+
+    // we can print and see the results
+    std::cout << out.transfer<Hardware::CPU>() << std::endl;
+}
 ```
+
+For more have a look at the [Wiki](https://github.com/Awia00/CuTeLib/wiki)
