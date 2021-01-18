@@ -163,6 +163,11 @@ class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV
     {
         return TensorSpan<const T, RankV, HardwareV, Traits>(this->data_, this->shape_);
     }
+
+    CUTE_DEV_HOST operator TensorSpan<const T, RankV, HardwareV, Traits>() const noexcept
+    {
+        return this->to_const();
+    }
 };
 
 template <typename T, Hardware HardwareV, typename Traits>
@@ -204,6 +209,11 @@ class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpa
     CUTE_DEV_HOST [[nodiscard]] constexpr TensorSpan<const T, 1, HardwareV, Traits> to_const() const noexcept
     {
         return TensorSpan<const T, 1, HardwareV, Traits>(this->data_, this->shape_);
+    }
+
+    CUTE_DEV_HOST operator TensorSpan<const T, 1, HardwareV, Traits>() const noexcept
+    {
+        return this->to_const();
     }
 };
 
