@@ -1,8 +1,10 @@
 #pragma once
-#include <cuda.h>
 #include <cute/hardware.h>
 #include <memory>
 #include <vector>
+#ifdef __CUDACC__
+#include <cuda.h>
+#endif
 
 namespace cute
 {

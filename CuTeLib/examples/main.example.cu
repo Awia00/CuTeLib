@@ -21,18 +21,19 @@ namespace /// example_id="cutelib_introduction"
 #include <cute/tensor_span.h>
 #include <cute/unique_ptr.h>
 
-__global__ void simple_mul_kernel(cute::TensorSpan<const float, 1, Hardware::GPU> x,
-                                  cute::TensorSpan<const float, 1, Hardware::GPU> y,
-                                  cute::TensorSpan<float, 1, Hardware::GPU> out)
+__global__ void saxpy(float a,
+                      cute::TensorSpan<const float, 1, Hardware::GPU> x,
+                      cute::TensorSpan<const float, 1, Hardware::GPU> y,
+                      cute::TensorSpan<float, 1, Hardware::GPU> out)
 {
     const auto idx = threadIdx.x + blockDim.x * blockIdx.x;
     if (idx < x.shape<0>()) // idx is valid given x's size on the first dimension
     {
-        out[idx] = x[idx] * y[idx];
+        out[idx] = a * x[idx] + y[idx];
     }
 }
 
-inline void cutelib_intro()
+void cutelib_intro()
 {
     // generate a iota 1d tensor (0,1,2,...,32) and transfer to GPU
     const auto x = cute::iota<float>(shape(32)).transfer<Hardware::GPU>();
@@ -41,8 +42,8 @@ inline void cutelib_intro()
     // Allocate a 1d tensor 0 initialized directly on the GPU
     auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));
 
-    // run kernel
-    simple_mul_kernel<<<1, 128>>>(x.get_span(), y.get_span(), out.get_span());
+    // run kernel: notice implicit conversion for spans (get_span if you want to be explicit)
+    saxpy<<<1, 128>>>(0.5, x, y, out);
 
     // we can print and see the results
     std::cout << out.transfer<Hardware::CPU>() << std::endl;
@@ -50,7 +51,7 @@ inline void cutelib_intro()
 
 } // namespace
 
-inline void array_examples()
+void array_examples()
 {
     /// example_id="array_basics"
     {
@@ -78,7 +79,7 @@ inline void array_examples()
     }
 }
 
-inline void unique_ptr_examples()
+void unique_ptr_examples()
 {
     // create a float cpu unique_ptr with 128 elements.
     // auto is std::unique_ptr<float[], HardwareDeleteFunctor<float, Hardware::CPU>>
@@ -100,7 +101,7 @@ inline void unique_ptr_examples()
     // Both of course gets deleted when running out of scope.
 }
 
-inline void tensor_span_examples()
+void tensor_span_examples()
 {
     // cute::make_unique always wants array types for now.
     auto cpu_data = cute::make_unique<float[], Hardware::CPU>(128);
