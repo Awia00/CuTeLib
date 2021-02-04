@@ -1,4 +1,5 @@
 #include "test_utils.h"
+#include <cute/stream.h>
 #include <cute/tensor.h>
 #include <doctest/doctest.h>
 

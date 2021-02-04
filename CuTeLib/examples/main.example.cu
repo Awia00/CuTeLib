@@ -1,6 +1,7 @@
 
 #include <cuda.h>
 #include <cute/array.h>
+#include <cute/stream.h>
 #include <cute/tensor.h>
 #include <cute/tensor_generators.h>
 #include <cute/tensor_span.h>
@@ -179,6 +180,35 @@ void kernel_use_example()
     std::cout << out.transfer<Hardware::CPU>() << std::endl;
 }
 
+
+namespace /// example_id="cutelib_stream"
+{
+#include <cuda.h>
+#include <cute/array.h>
+#include <cute/tensor.h>
+#include <cute/tensor_generators.h>
+#include <cute/tensor_span.h>
+#include <cute/unique_ptr.h>
+
+void cutelib_stream()
+{
+    const auto x = cute::iota<float>(shape(32)).transfer<Hardware::GPU>();
+    const auto y = cute::random<float>(shape(32)).transfer<Hardware::GPU>();
+    auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));
+
+    auto stream = cute::Stream<Hardware::GPU>();
+    auto shared_mem_size = 0;
+    saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, x, y, out);
+    saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, y, x, out);
+
+    stream.synchronize(); // wait for the kernels to finish
+
+    std::cout << out.transfer<Hardware::CPU>() << std::endl;
+}
+
+} // namespace
+
+
 } // namespace cute
 
 int main()
@@ -191,6 +221,7 @@ int main()
     cute::unique_ptr_examples();
     cute::tensor_span_examples();
     cute::kernel_use_example();
+    cute::cutelib_stream();
 
     std::cout << "Done" << std::endl;
     return 0;
