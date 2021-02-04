@@ -8,18 +8,18 @@ The purpose of the **CU**DA **Te**mplate **Lib**rary is to provide constructs fo
 #include <cuda.h>
 #include <cute/array.h>
 #include <cute/tensor.h>
+#include <cute/tensor_generators.h>
 #include <cute/tensor_span.h>
-#include <cute/tensor_utils.h>
-#include <cute/unique_ptr.h>
 
-__global__ void simple_mul_kernel(cute::TensorSpan<const float, 1, Hardware::GPU> x,
-                                  cute::TensorSpan<const float, 1, Hardware::GPU> y,
-                                  cute::TensorSpan<float, 1, Hardware::GPU> out)
+__global__ void saxpy(float a,
+                      cute::TensorSpan<const float, 1, Hardware::GPU> x,
+                      cute::TensorSpan<const float, 1, Hardware::GPU> y,
+                      cute::TensorSpan<float, 1, Hardware::GPU> out)
 {
     const auto idx = threadIdx.x + blockDim.x * blockIdx.x;
     if (idx < x.shape<0>()) // idx is valid given x's size on the first dimension
     {
-        out[idx] = x[idx] * y[idx];
+        out[idx] = a * x[idx] + y[idx];
     }
 }
 
@@ -32,12 +32,13 @@ void cutelib_intro()
     // Allocate a 1d tensor 0 initialized directly on the GPU
     auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));
 
-    // run kernel
-    simple_mul_kernel<<<1, 128>>>(x.get_span(), y.get_span(), out.get_span());
+    // run kernel: notice implicit conversion for spans (get_span if you want to be explicit)
+    saxpy<<<1, 128>>>(0.5, x, y, out);
 
     // we can print and see the results
     std::cout << out.transfer<Hardware::CPU>() << std::endl;
 }
+
 ```
 
 For more have a look at the [Wiki](https://github.com/Awia00/CuTeLib/wiki)
