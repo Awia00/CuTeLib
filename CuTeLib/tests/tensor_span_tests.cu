@@ -1,8 +1,8 @@
 #include "test_utils.h"
 #include <cute/array.h>
 #include <cute/tensor.h>
+#include <cute/tensor_generators.h>
 #include <cute/tensor_span.h>
-#include <cute/tensor_utils.h>
 #include <cute/unique_ptr.h>
 #include <doctest/doctest.h>
 #include <iostream>

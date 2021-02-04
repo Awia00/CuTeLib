@@ -17,11 +17,29 @@ template <typename T, typename ShapesT>
     return result;
 }
 
+/**
+ * @brief Generates a tensor with random T values. Note we only use std::rand and therefore this
+ * should not be used when truly random distribution is required.
+ *
+ * @tparam T
+ * @tparam ShapesT
+ * @param args
+ * @return auto
+ */
 template <typename T, typename ShapesT>
 [[nodiscard]] auto random(ShapesT args)
 {
     auto result = Tensor<T, ShapesT::size(), Hardware::CPU>(std::move(args));
-    std::generate(result.begin(), result.end(), std::rand);
+    std::generate(result.begin(), result.end(), []() {
+        if constexpr (std::is_floating_point_v<T>)
+        {
+            return std::rand() / float(RAND_MAX);
+        }
+        else
+        {
+            return T(std::rand());
+        }
+    });
     return result;
 }
 

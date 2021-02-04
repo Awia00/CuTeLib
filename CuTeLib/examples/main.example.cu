@@ -2,8 +2,8 @@
 #include <cuda.h>
 #include <cute/array.h>
 #include <cute/tensor.h>
+#include <cute/tensor_generators.h>
 #include <cute/tensor_span.h>
-#include <cute/tensor_utils.h>
 #include <cute/unique_ptr.h>
 #include <iostream>
 #include <vector>
@@ -17,8 +17,8 @@ namespace /// example_id="cutelib_introduction"
 #include <cuda.h>
 #include <cute/array.h>
 #include <cute/tensor.h>
+#include <cute/tensor_generators.h>
 #include <cute/tensor_span.h>
-#include <cute/tensor_utils.h>
 #include <cute/unique_ptr.h>
 
 __global__ void simple_mul_kernel(cute::TensorSpan<const float, 1, Hardware::GPU> x,
