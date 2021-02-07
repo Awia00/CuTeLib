@@ -92,7 +92,7 @@ class Tensor
         static_assert(!std::is_const_v<T>, "T should not be const");
 
         memcpy(other_tensor.data_ptr(), this->data_, other_tensor.size());
-    };
+    }
     MyT& operator=(const MyT& other_tensor) noexcept
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
@@ -107,7 +107,7 @@ class Tensor
 
         memcpy(other_tensor.data_ptr(), this->data_, this->size());
         return *this;
-    };
+    }
 
     Tensor(MyT&& other_tensor) noexcept = default;
     MyT& operator=(MyT&& other_tensor) noexcept = default;

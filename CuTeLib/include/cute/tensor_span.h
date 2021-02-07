@@ -13,6 +13,7 @@ struct TensorSpanTraits
     using shape_type = int32_t;
     using size_type = int64_t;
     using index_type = int32_t;
+
     constexpr static bool is_rescricted()
     {
         return false;

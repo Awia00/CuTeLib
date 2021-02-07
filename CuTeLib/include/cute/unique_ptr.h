@@ -73,7 +73,6 @@ template <typename T, Hardware HardwareV>
 [[nodiscard]] constexpr HardwareUniquePtr<T, HardwareV> make_unique(size_t num_elements)
 {
     static_assert(std::is_array_v<T>, "Must be array type");
-    ENSURE_CUDA_COMPILER_IF_GPU(HardwareV);
     return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements));
 }
 

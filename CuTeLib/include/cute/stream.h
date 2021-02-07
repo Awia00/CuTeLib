@@ -21,11 +21,6 @@ class Stream
 
 #ifdef __CUDACC__
 
-// static int32_t STREAM_GPU_LEAST_PRIORITY;
-// static int32_t STREAM_GPU_GREATEST_PRIORITY;
-// static auto foo = cudaDeviceGetStreamPriorityRange(&STREAM_GPU_LEAST_PRIORITY, &STREAM_GPU_GREATEST_PRIORITY);
-// static int32_t STREAM_GPU_DEFAULT_PRIORITY = (STREAM_GPU_LEAST_PRIORITY + STREAM_GPU_GREATEST_PRIORITY) / 2;
-
 template <>
 class Stream<Hardware::GPU>
 {
@@ -40,6 +35,12 @@ class Stream<Hardware::GPU>
     {
         cudaStreamCreateWithFlags(&this->native_stream_, flags);
     }
+    /**
+     * @brief Construct a new Stream object. For priority see 'cudaDeviceGetStreamPriorityRange(int& priority_low, int& priority_high)'
+     *
+     * @param flags
+     * @param priority
+     */
     Stream(uint32_t flags, int32_t priority)
     {
         cudaStreamCreateWithPriority(&this->native_stream_, flags, priority);
@@ -48,10 +49,16 @@ class Stream<Hardware::GPU>
     Stream(Stream&) = delete;
     Stream<Hardware::GPU>& operator=(Stream&) = delete;
 
-    Stream(Stream&& o_stream) : native_stream_(std::move(o_stream.native_stream_))
+    Stream(Stream&& o_stream) noexcept : native_stream_(std::move(o_stream.native_stream_))
     {
         o_stream.native_stream_ = nullptr;
     }
+    /**
+     * @brief Stream move assignment constructor. Notice that the current native stream will be destroyed.
+     *
+     * @param o_stream
+     * @return Stream<Hardware::GPU>&
+     */
     Stream<Hardware::GPU>& operator=(Stream&& o_stream)
     {
         cudaStreamDestroy(this->native_stream_);
@@ -59,6 +66,7 @@ class Stream<Hardware::GPU>
         o_stream.native_stream_ = nullptr;
         return *this;
     }
+
     ~Stream()
     {
         cudaStreamDestroy(this->native_stream_);
@@ -71,7 +79,12 @@ class Stream<Hardware::GPU>
         cudaStreamSynchronize(this->native_stream_);
     }
 
-    void wait_for(Event<Hardware::GPU>& event, uint32_t flags = 0);
+    /**
+     * @brief on the stream, enqueue waiting for the event given as argument.
+     *
+     * @param event
+     */
+    void wait_for(Event<Hardware::GPU>& event);
 
     operator cudaStream_t&()
     {
@@ -109,6 +122,11 @@ class Event<Hardware::GPU>
         cudaEventCreate(&this->native_event_);
     }
 
+    /**
+     * @brief Construct a new Event object
+     *
+     * @param flags for max performance pass in cudaEventDisableTiming as per CUDA documentation
+     */
     Event(uint32_t flags)
     {
         cudaEventCreateWithFlags(&this->native_event_, flags);
@@ -116,10 +134,17 @@ class Event<Hardware::GPU>
     Event(Event&) = delete;
     Event<Hardware::GPU>& operator=(Event&) = delete;
 
-    Event(Event&& o_event) : native_event_(std::move(o_event.native_event_))
+    Event(Event&& o_event) noexcept : native_event_(std::move(o_event.native_event_))
     {
         o_event.native_event_ = nullptr;
     }
+
+    /**
+     * @brief Move assignment constructor. Notice that the current native event will be destroyed.
+     *
+     * @param o_event
+     * @return Event<Hardware::GPU>&
+     */
     Event<Hardware::GPU>& operator=(Event&& o_event)
     {
         cudaEventDestroy(this->native_event_);
@@ -132,6 +157,11 @@ class Event<Hardware::GPU>
         cudaEventDestroy(this->native_event_);
     }
 
+    /**
+     * @brief Records an event (this) on the stream
+     *
+     * @param stream
+     */
     void record(Stream<Hardware::GPU>& stream)
     {
         cudaEventRecord(this->native_event_, stream);
@@ -153,9 +183,9 @@ class Event<Hardware::GPU>
     }
 };
 
-void Stream<Hardware::GPU>::wait_for(Event<Hardware::GPU>& event, uint32_t flags)
+void Stream<Hardware::GPU>::wait_for(Event<Hardware::GPU>& event)
 {
-    cudaStreamWaitEvent(this->native_stream_, event, flags);
+    cudaStreamWaitEvent(this->native_stream_, event);
 }
 
 #endif
