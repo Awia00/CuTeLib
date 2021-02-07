@@ -1,5 +1,6 @@
 #pragma once
 #include <cute/hardware.h>
+#include <cute/stream.h>
 #include <memory>
 #include <vector>
 #ifdef __CUDACC__
@@ -86,12 +87,14 @@ template <typename HardwareUniquePtrT>
 }
 
 
+// =============== MEMCPY ===============
+
 enum struct MemcpyType
 {
-    HostToHost,
-    HostToDevice,
-    DeviceToHost,
-    DeviceToDevice
+    HostToHost = 0,
+    HostToDevice = 1,
+    DeviceToHost = 2,
+    DeviceToDevice = 3
 };
 
 template <Hardware HardwareFromV, Hardware HardwareToV>
@@ -112,12 +115,17 @@ template <Hardware HardwareFromV, Hardware HardwareToV>
     return MemcpyType::DeviceToHost;
 }
 
+template <MemcpyType MemcpyTypeT>
+using MemCpyStreamT =
+    typename std::conditional_t<MemcpyTypeT >= MemcpyType::HostToDevice, Stream<Hardware::GPU>, Stream<Hardware::CPU>>;
 
 template <MemcpyType MemcpyTypeT>
 struct MemCpyPartialTemplateSpecializer
 {
     template <typename T>
     constexpr static void memcpy_data(const T* from_ptr, T* to_ptr, size_t elements);
+    template <typename T>
+    constexpr static void memcpy_data_async(const T* from_ptr, T* to_ptr, size_t elements, MemCpyStreamT<MemcpyTypeT>& stream);
 };
 
 #ifdef __CUDACC__
@@ -143,12 +151,46 @@ constexpr void MemCpyPartialTemplateSpecializer<MemcpyTypeT>::memcpy_data<T>(con
     }
 }
 
+template <MemcpyType MemcpyTypeT>
+template <typename T>
+constexpr void MemCpyPartialTemplateSpecializer<MemcpyTypeT>::memcpy_data_async<T>(const T* from_ptr,
+                                                                                   T* to_ptr,
+                                                                                   size_t elements,
+                                                                                   MemCpyStreamT<MemcpyTypeT>& stream)
+{
+    if constexpr (MemcpyTypeT == MemcpyType::HostToHost)
+    {
+        std::copy(from_ptr, from_ptr + elements, to_ptr);
+    }
+    else if constexpr (MemcpyTypeT == MemcpyType::HostToDevice)
+    {
+        cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyHostToDevice, stream);
+    }
+    else if constexpr (MemcpyTypeT == MemcpyType::DeviceToHost)
+    {
+        cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToHost, stream);
+    }
+    else // if (MemcpyTypeT == MemcpyType::DeviceToDevice)
+    {
+        cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToDevice, stream);
+    }
+}
+
 #else
 template <>
 struct MemCpyPartialTemplateSpecializer<MemcpyType::HostToHost>
 {
     template <typename T>
     constexpr static void memcpy_data(const T* from_ptr, T* to_ptr, size_t elements)
+    {
+        std::copy(from_ptr, from_ptr + elements, to_ptr);
+    }
+
+    template <typename T>
+    constexpr static void memcpy_data_async(const T* from_ptr,
+                                            T* to_ptr,
+                                            size_t elements,
+                                            MemCpyStreamT<MemcpyType::HostToHost>& stream)
     {
         std::copy(from_ptr, from_ptr + elements, to_ptr);
     }
@@ -170,6 +212,21 @@ constexpr void memcpy(const HardwareUniquePtrFromT& from_ptr, HardwareUniquePtrT
     MemCpyPartialTemplateSpecializer<memcpy_type>::memcpy_data(from_ptr.get(), to_ptr.get(), elements);
 }
 
+
+template <typename HardwareUniquePtrFromT, typename HardwareUniquePtrToT, typename StreamT>
+constexpr void memcpy_async(const HardwareUniquePtrFromT& from_ptr, HardwareUniquePtrToT& to_ptr, size_t elements, StreamT& stream)
+{
+    using FromRemRef = typename std::remove_reference_t<HardwareUniquePtrFromT>;
+    using ToRemRef = typename std::remove_reference_t<HardwareUniquePtrToT>;
+    using FromT = typename std::remove_const_t<typename FromRemRef::element_type>;
+    using T = typename std::remove_const_t<typename ToRemRef::element_type>;
+    static_assert(std::is_same_v<FromT, T>, "From and to were not of same type");
+
+    constexpr auto memcpy_type = get_memcpy_type<what_hardware<FromRemRef>(), what_hardware<ToRemRef>()>();
+
+    MemCpyPartialTemplateSpecializer<memcpy_type>::memcpy_data_async(from_ptr.get(), to_ptr.get(), elements, stream);
+}
+
 template <typename FromT, typename HardwareUniquePtrToT>
 constexpr void memcpy(const std::vector<FromT>& from_ptr, HardwareUniquePtrToT& to_ptr, size_t elements)
 {
@@ -181,6 +238,7 @@ constexpr void memcpy(const std::vector<FromT>& from_ptr, HardwareUniquePtrToT& 
     MemCpyPartialTemplateSpecializer<memcpy_type>::memcpy_data(from_ptr.data(), to_ptr.get(), elements);
 }
 
+// =============== MEMSET ===============
 
 template <Hardware HardwareV>
 struct MemsetPartialTemplateSpecializer

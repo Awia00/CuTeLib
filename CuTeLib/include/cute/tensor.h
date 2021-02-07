@@ -49,6 +49,7 @@ class Tensor
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
+        assert(vec.size() == shape.template mul<size_type>());
 
         memcpy(vec, this->data_, vec.size());
     }
@@ -117,6 +118,25 @@ class Tensor
     [[nodiscard]] constexpr auto transfer() const noexcept
     {
         return Tensor<T, RankV, ToHardwareV, Traits>(*this);
+    }
+
+    template <Hardware ToHardwareV, typename StreamT>
+    Tensor<T, RankV, ToHardwareV> transfer_async(StreamT& stream) const
+    {
+        auto res = Tensor<T, RankV, ToHardwareV>(this->shape_);
+        this->transfer_async<ToHardwareV, StreamT>(stream, res);
+        return res;
+    }
+    template <Hardware ToHardwareV, typename StreamT>
+    void transfer_async(StreamT& stream, const TensorSpan<T, RankV, ToHardwareV>& out) const
+    {
+        assert(this->shape_ == out.get_shape());
+        constexpr auto memcpy_type = get_memcpy_type<HardwareV, ToHardwareV>();
+
+        MemCpyPartialTemplateSpecializer<memcpy_type>::template memcpy_data_async<T>(this->data(),
+                                                                                     out.data(),
+                                                                                     this->size(),
+                                                                                     stream);
     }
 
     static constexpr Hardware hardware() noexcept

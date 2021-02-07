@@ -201,9 +201,10 @@ void cutelib_stream()
     saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, x, y, out);
     saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, y, x, out);
 
-    stream.synchronize(); // wait for the kernels to finish
+    auto res = out.transfer_async<Hardware::CPU>(stream);
+    stream.synchronize(); // wait for the kernels to finish and transfer to cpu
 
-    std::cout << out.transfer<Hardware::CPU>() << std::endl;
+    std::cout << res << std::endl;
 }
 
 } // namespace

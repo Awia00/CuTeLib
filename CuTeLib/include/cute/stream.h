@@ -185,7 +185,8 @@ class Event<Hardware::GPU>
 
 void Stream<Hardware::GPU>::wait_for(Event<Hardware::GPU>& event)
 {
-    cudaStreamWaitEvent(this->native_stream_, event);
+    constexpr auto flag = 0; // flag must be 0, other values are only used for CUDA graphs
+    cudaStreamWaitEvent(this->native_stream_, event, flag);
 }
 
 #endif
