@@ -228,14 +228,14 @@ constexpr void memcpy_async(const HardwareUniquePtrFromT& from_ptr, HardwareUniq
 }
 
 template <typename FromT, typename HardwareUniquePtrToT>
-constexpr void memcpy(const std::vector<FromT>& from_ptr, HardwareUniquePtrToT& to_ptr, size_t elements)
+constexpr void memcpy(const std::initializer_list<FromT>& from_ptr, HardwareUniquePtrToT& to_ptr, size_t elements)
 {
     using ToRemRef = typename std::remove_reference_t<HardwareUniquePtrToT>;
     using T = typename std::remove_const_t<typename ToRemRef::element_type>;
     static_assert(std::is_same_v<FromT, T>, "From and to were not of same type");
 
     constexpr auto memcpy_type = get_memcpy_type<Hardware::CPU, what_hardware<HardwareUniquePtrToT>()>();
-    MemCpyPartialTemplateSpecializer<memcpy_type>::memcpy_data(from_ptr.data(), to_ptr.get(), elements);
+    MemCpyPartialTemplateSpecializer<memcpy_type>::memcpy_data(from_ptr.begin(), to_ptr.get(), elements);
 }
 
 // =============== MEMSET ===============
@@ -245,6 +245,9 @@ struct MemsetPartialTemplateSpecializer
 {
     template <typename T>
     constexpr static void memset_data(T* ptr, T val, size_t num_bytes);
+
+    template <typename T>
+    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, Stream<HardwareV>& stream);
 };
 
 #ifdef __CUDACC__
@@ -262,12 +265,36 @@ constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data<T>(T* pt
     }
 }
 
+template <Hardware HardwareV>
+template <typename T>
+constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data_async<T>(T* ptr,
+                                                                                 T val,
+                                                                                 size_t num_bytes,
+                                                                                 Stream<HardwareV>& stream)
+{
+    if constexpr (HardwareV == Hardware::CPU)
+    {
+        std::memset(ptr, val, num_bytes);
+    }
+    else // if (hardware == MemcpyType::HostToDevice)
+    {
+        cudaMemsetAsync(ptr, val, num_bytes, stream);
+    }
+}
+
+
 #else
 template <>
 struct MemsetPartialTemplateSpecializer<Hardware::CPU>
 {
     template <typename T>
     constexpr static void memset_data(T* ptr, T val, size_t num_bytes)
+    {
+        std::memset(ptr, val, num_bytes);
+    }
+
+    template <typename T>
+    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, Stream<Hardware::CPU>& stream)
     {
         std::memset(ptr, val, num_bytes);
     }
@@ -282,6 +309,15 @@ constexpr void memset(HardwareUniquePtrT& ptr, T val, size_t num_bytes)
     constexpr auto hardware = what_hardware<RemRef>();
 
     MemsetPartialTemplateSpecializer<hardware>::memset_data(ptr.get(), val, num_bytes);
+}
+
+template <typename HardwareUniquePtrT, typename T, typename StreamT>
+constexpr void memset_async(HardwareUniquePtrT& ptr, T val, size_t num_bytes, StreamT& stream)
+{
+    using RemRef = typename std::remove_reference_t<HardwareUniquePtrT>;
+    constexpr auto hardware = what_hardware<RemRef>();
+
+    MemsetPartialTemplateSpecializer<hardware>::memset_data_async(ptr.get(), val, num_bytes, stream);
 }
 
 

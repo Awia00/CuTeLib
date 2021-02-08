@@ -16,7 +16,11 @@ class Event;
 template <Hardware HardwareV>
 class Stream
 {
-    // no specific implementation for CPU
+    // no specific implementation for CPU - feel free to specialize
+    public:
+    void synchronize()
+    {
+    }
 };
 
 #ifdef __CUDACC__
