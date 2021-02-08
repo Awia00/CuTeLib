@@ -126,7 +126,7 @@ void tensor_span_examples()
               << std::endl; // prints 1
 
     // or const. Note that spans over constant data does not have to be constant themselves.
-    const auto tensor_const = Vector<double, Hardware::CPU>(std::vector<double>{ 5, 4, 3, 2, 1 }, { 5 }); // Vector is just a 1d Tensor
+    const auto tensor_const = Vector<double, Hardware::CPU>({ 5, 4, 3, 2, 1 }, { 5 }); // Vector is just a 1d Tensor
     auto tensor_const_span = tensor_const.get_span();
     const auto& elem_const = tensor_const_span.elem_ref(1);
     std::cout << "const_span:\t" << elem_const << std::endl; // prints 4.0

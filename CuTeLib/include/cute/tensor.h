@@ -12,6 +12,8 @@ struct TensorTraits
     using shape_type = int32_t;
     using size_type = int64_t;
     using index_type = int32_t;
+
+    constexpr static bool zero_initialize = true;
 };
 
 ///
@@ -41,17 +43,20 @@ class Tensor
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
 
-        memset(this->data_, T(0), this->size() * sizeof(T));
+        if constexpr (Traits::zero_initialize)
+        {
+            memset(this->data_, T(), this->size() * sizeof(T));
+        }
     }
 
-    Tensor(const std::vector<T>& vec, Array<shape_type, RankV> shape) noexcept
+    Tensor(const std::initializer_list<T>& init_list, Array<shape_type, RankV> shape) noexcept
       : data_(cute::make_unique<T[], HardwareV>(shape.template mul<size_type>())), shape_(std::move(shape))
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
-        assert(vec.size() == shape.template mul<size_type>());
+        assert(init_list.size() == shape.template mul<size_type>());
 
-        memcpy(vec, this->data_, vec.size());
+        memcpy(init_list, this->data_, init_list.size());
     }
 
     // Templated copy constructor
