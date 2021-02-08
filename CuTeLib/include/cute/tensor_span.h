@@ -141,7 +141,7 @@ class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV
     {
         static_assert(sizeof...(Args) == RankV, "One argument per dimension");
 
-        return this->data_[this->index<0>(0, args...)];
+        return this->data_[this->template index<0>(0, args...)];
     }
 
     template <typename... Args>
@@ -149,12 +149,12 @@ class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV
     {
         static_assert(sizeof...(Args) == RankV, "One argument per dimension");
 
-        return this->data_[this->index<0>(0, args...)];
+        return this->data_[this->template index<0>(0, args...)];
     }
 
     CUTE_DEV_HOST [[nodiscard]] constexpr TensorSpan<T, RankV - 1, HardwareV, Traits> operator[](index_type idx) const noexcept
     {
-        auto offset = this->stride<0>() * idx;
+        auto offset = this->template stride<0>() * idx;
         auto data_ptr = this->data_ + offset;
         auto new_shape = this->shape_.template skip<1>();
         return TensorSpan<T, RankV - 1, HardwareV, Traits>(data_ptr, std::move(new_shape));
@@ -191,7 +191,7 @@ class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpa
     {
         static_assert(sizeof...(Args) == 1, "One argument per dimension");
 
-        return this->data_[this->index<0>(0, args...)];
+        return this->data_[this->template index<0>(0, args...)];
     }
 
     template <typename... Args>
@@ -199,7 +199,7 @@ class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpa
     {
         static_assert(sizeof...(Args) == 1, "One argument per dimension");
 
-        return this->data_[this->index<0>(0, args...)];
+        return this->data_[this->template index<0>(0, args...)];
     }
 
     CUTE_DEV_HOST constexpr T& operator[](index_type idx) const noexcept
