@@ -95,6 +95,11 @@ void unique_ptr_examples()
     static_assert(std::is_same_v<decltype(uniq_cpu_ptr.get()), decltype(uniq_gpu_ptr.get())>,
                   ".get() is however the same type - so exercise regular care");
 
+    // We can also allocate memory asynchrounously for GPUs
+    auto stream = Stream<Hardware::GPU>();
+    const auto uniq_async_gpu_ptr = cute::make_unique_async<float[], Hardware::GPU>(128, stream);
+    stream.synchronize();
+
     // Notice that cute::make_unique returns a regular std::unique_ptr but with a custom deleter.
     //   Also notice that the template parameter T in unique_ptr is the array version T[].
     // You can also use the alias HardwareUniquePtr<T, Hardware>.

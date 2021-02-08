@@ -26,6 +26,7 @@ struct NewFunctorGPU
     constexpr NewFunctorGPU() noexcept = default;
 
     [[nodiscard]] constexpr auto operator()(size_t num_elements) const noexcept;
+    [[nodiscard]] constexpr auto operator()(size_t num_elements, Stream<Hardware::GPU>& stream) const noexcept;
 };
 
 template <typename T>
@@ -35,6 +36,11 @@ struct NewFunctorCPU
     using TBase = typename std::remove_all_extents_t<T>;
 
     [[nodiscard]] constexpr auto operator()(size_t num_elements) noexcept
+    {
+        return new TBase[num_elements];
+    }
+
+    [[nodiscard]] constexpr auto operator()(size_t num_elements, Stream<Hardware::CPU>& stream) noexcept
     {
         return new TBase[num_elements];
     }
@@ -56,6 +62,15 @@ template <typename T>
     cudaMalloc(&ptr, num_elements * sizeof(float));
     return ptr;
 }
+
+template <typename T>
+[[nodiscard]] constexpr auto NewFunctorGPU<T>::operator()(size_t num_elements, Stream<Hardware::GPU>& stream) const noexcept
+{
+    using TBase = typename std::remove_all_extents_t<T>;
+    TBase* ptr;
+    cudaMallocAsync(&ptr, num_elements * sizeof(float), stream);
+    return ptr;
+}
 #endif
 
 template <typename T, Hardware HardwareV>
@@ -72,6 +87,14 @@ using HardwareUniquePtr = std::unique_ptr<T, HardwareDeleteFunctor<T, HardwareV>
 
 template <typename T, Hardware HardwareV>
 [[nodiscard]] constexpr HardwareUniquePtr<T, HardwareV> make_unique(size_t num_elements)
+{
+    static_assert(std::is_array_v<T>, "Must be array type");
+    return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements));
+}
+
+template <typename T, Hardware HardwareV>
+[[nodiscard]] constexpr HardwareUniquePtr<T, HardwareV> make_unique_async(size_t num_elements,
+                                                                          Stream<HardwareV>& stream)
 {
     static_assert(std::is_array_v<T>, "Must be array type");
     return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements));
