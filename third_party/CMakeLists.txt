@@ -1,1 +1,1 @@
-add_subdirectory(doctest-2.4.0)
+add_subdirectory(doctest-2.4.5)
