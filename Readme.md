@@ -42,3 +42,12 @@ void cutelib_intro()
 ```
 
 For more have a look at the [Wiki](https://github.com/Awia00/CuTeLib/wiki)
+
+
+## Development
+
+Build requirements:
+
+- CUDA >= 11.3
+- MSVC >= 16.10
+- CMAKE >= 3.18
