@@ -97,7 +97,7 @@ template <typename T, Hardware HardwareV>
                                                                           Stream<HardwareV>& stream)
 {
     static_assert(std::is_array_v<T>, "Must be array type");
-    return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements));
+    return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements, stream));
 }
 
 template <typename HardwareUniquePtrT>
