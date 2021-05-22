@@ -1,20 +1,21 @@
 
 #include <cuda.h>
+#include <iostream>
+#include <vector>
 #include <cute/array.h>
 #include <cute/stream.h>
 #include <cute/tensor.h>
 #include <cute/tensor_generators.h>
 #include <cute/tensor_span.h>
 #include <cute/unique_ptr.h>
-#include <iostream>
-#include <vector>
 
 namespace cute
 {
 
 
-namespace /// example_id="cutelib_introduction"
+namespace  /// example_id="cutelib_introduction"
 {
+
 #include <cuda.h>
 #include <cute/array.h>
 #include <cute/tensor.h>
@@ -28,7 +29,7 @@ __global__ void saxpy(float a,
                       cute::TensorSpan<float, 1, Hardware::GPU> out)
 {
     const auto idx = threadIdx.x + blockDim.x * blockIdx.x;
-    if (idx < x.shape<0>()) // idx is valid given x's size on the first dimension
+    if (idx < x.shape<0>())  // idx is valid given x's size on the first dimension
     {
         out[idx] = a * x[idx] + y[idx];
     }
@@ -50,7 +51,7 @@ void cutelib_intro()
     std::cout << out.transfer<Hardware::CPU>() << std::endl;
 }
 
-} // namespace
+}  // namespace
 
 void array_examples()
 {
@@ -67,7 +68,7 @@ void array_examples()
         assert(i32_arr.drop<1>() == cute::array(0, 2));
 
         // You can print arrays using the stream_array function:
-        std::cout << i32_arr << std::endl; // [0, 1, 2]
+        std::cout << i32_arr << std::endl;  // [0, 1, 2]
     }
 
     /// example_id="array_numerics"
@@ -96,7 +97,7 @@ void unique_ptr_examples()
                   ".get() is however the same type - so exercise regular care");
 
     // We can also allocate memory asynchrounously for GPUs
-    auto stream = Stream<Hardware::GPU>();
+    auto stream = cute::make_stream<Hardware::GPU>();
     const auto uniq_async_gpu_ptr = cute::make_unique_async<float[], Hardware::GPU>(128, stream);
     stream.synchronize();
 
@@ -114,13 +115,13 @@ void tensor_span_examples()
     auto vector_span = get_span_of(cpu_data, shape(128));
     vector_span.elem_ref(0) = 0;
     vector_span.elem_ref(64) = 10;
-    std::cout << "vector_span[0]:\t\t" << vector_span[0] << std::endl; // prints 0
-    std::cout << "vector_span.elem(64):\t" << vector_span.elem(64) << std::endl; // prints 10
+    std::cout << "vector_span[0]:\t\t" << vector_span[0] << std::endl;  // prints 0
+    std::cout << "vector_span.elem(64):\t" << vector_span.elem(64) << std::endl;  // prints 10
 
     auto matrix_span = get_span_of(cpu_data, shape(2, 64));
-    std::cout << "matrix_span.elem(1, 0):\t" << matrix_span.elem(1, 0) << std::endl; // prints 10
+    std::cout << "matrix_span.elem(1, 0):\t" << matrix_span.elem(1, 0) << std::endl;  // prints 10
     auto second_row_span = matrix_span[1];
-    std::cout << "matrix_span[1].elem(0):\t" << second_row_span.elem(0) << std::endl; // prints 10
+    std::cout << "matrix_span[1].elem(0):\t" << second_row_span.elem(0) << std::endl;  // prints 10
 
     // You can use spans over raw data, or you can use the Tensor class which owns data and allows you to easily get a span.
     auto tensor = Tensor<int8_t, 3, Hardware::CPU>({ 1, 2, 3 });
@@ -128,27 +129,27 @@ void tensor_span_examples()
     auto& elem = tensor_span.elem_ref(0, 1, 2);
     elem = 1;
     std::cout << "span.elem_ref(0, 1, 2):\t" << static_cast<bool>(tensor_span.elem_ref(0, 1, 2))
-              << std::endl; // prints 1
+              << std::endl;  // prints 1
 
     // or const. Note that spans over constant data does not have to be constant themselves.
-    const auto tensor_const = Vector<double, Hardware::CPU>({ 5, 4, 3, 2, 1 }, { 5 }); // Vector is just a 1d Tensor
+    const auto tensor_const = Vector<double, Hardware::CPU>({ 5, 4, 3, 2, 1 }, { 5 });  // Vector is just a 1d Tensor
     auto tensor_const_span = tensor_const.get_span();
     const auto& elem_const = tensor_const_span.elem_ref(1);
-    std::cout << "const_span:\t" << elem_const << std::endl; // prints 4.0
+    std::cout << "const_span:\t" << elem_const << std::endl;  // prints 4.0
 
 
     // We can use the copy constructors or use the transfer methods for transfering data to and from different hardware.
     auto cpu_tensor = Tensor<int32_t, 2, Hardware::CPU>({ 2, 2 });
-    auto cpu_transfered = cpu_tensor.transfer<Hardware::CPU>(); // just a regular copy
+    auto cpu_transfered = cpu_tensor.transfer<Hardware::CPU>();  // just a regular copy
     cpu_transfered.get_span().elem_ref(0, 0) = 123;
 
     // there...
     auto gpu_transfered = cpu_transfered.transfer<Hardware::GPU>();
-    cpu_transfered.get_span().elem_ref(0, 0) = 1; // zero out to show it is a copy
+    cpu_transfered.get_span().elem_ref(0, 0) = 1;  // zero out to show it is a copy
 
     // ... and back again
     auto moved_back = gpu_transfered.transfer<Hardware::CPU>();
-    std::cout << "CPU->GPU->CPU:\t" << moved_back.get_span().elem(0, 0) << std::endl; // prints 123
+    std::cout << "CPU->GPU->CPU:\t" << moved_back.get_span().elem(0, 0) << std::endl;  // prints 123
     std::cout << std::endl;
 }
 
@@ -186,7 +187,7 @@ void kernel_use_example()
 }
 
 
-namespace /// example_id="cutelib_stream"
+namespace  /// example_id="cutelib_stream"
 {
 #include <cuda.h>
 #include <cute/array.h>
@@ -201,21 +202,21 @@ void cutelib_stream()
     const auto y = cute::random<float>(shape(32)).transfer<Hardware::GPU>();
     auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));
 
-    auto stream = cute::Stream<Hardware::GPU>();
+    auto stream = cute::make_stream<Hardware::GPU>();
     auto shared_mem_size = 0;
     saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, x, y, out);
     saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, y, x, out);
 
     auto res = out.transfer_async<Hardware::CPU>(stream);
-    stream.synchronize(); // wait for the kernels to finish and transfer to cpu
+    stream.synchronize();  // wait for the kernels to finish and transfer to cpu
 
     std::cout << res << std::endl;
 }
 
-} // namespace
+}  // namespace
 
 
-} // namespace cute
+}  // namespace cute
 
 int main()
 {

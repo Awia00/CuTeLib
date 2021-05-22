@@ -1,8 +1,8 @@
 #pragma once
-#include <cute/hardware.h>
-#include <cute/stream.h>
 #include <memory>
 #include <vector>
+#include <cute/hardware.h>
+#include <cute/stream.h>
 #ifdef __CUDACC__
 #include <cuda.h>
 #endif
@@ -26,7 +26,7 @@ struct NewFunctorGPU
     constexpr NewFunctorGPU() noexcept = default;
 
     [[nodiscard]] constexpr auto operator()(size_t num_elements) const noexcept;
-    [[nodiscard]] constexpr auto operator()(size_t num_elements, Stream<Hardware::GPU>& stream) const noexcept;
+    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView<Hardware::GPU>& stream) const noexcept;
 };
 
 template <typename T>
@@ -40,7 +40,7 @@ struct NewFunctorCPU
         return new TBase[num_elements];
     }
 
-    [[nodiscard]] constexpr auto operator()(size_t num_elements, Stream<Hardware::CPU>& stream) noexcept
+    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView<Hardware::CPU>& stream) noexcept
     {
         return new TBase[num_elements];
     }
@@ -64,7 +64,8 @@ template <typename T>
 }
 
 template <typename T>
-[[nodiscard]] constexpr auto NewFunctorGPU<T>::operator()(size_t num_elements, Stream<Hardware::GPU>& stream) const noexcept
+[[nodiscard]] constexpr auto NewFunctorGPU<T>::operator()(size_t num_elements,
+                                                          StreamView<Hardware::GPU>& stream) const noexcept
 {
     using TBase = typename std::remove_all_extents_t<T>;
     TBase* ptr;
@@ -94,7 +95,7 @@ template <typename T, Hardware HardwareV>
 
 template <typename T, Hardware HardwareV>
 [[nodiscard]] constexpr HardwareUniquePtr<T, HardwareV> make_unique_async(size_t num_elements,
-                                                                          Stream<HardwareV>& stream)
+                                                                          StreamView<HardwareV>& stream)
 {
     static_assert(std::is_array_v<T>, "Must be array type");
     return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements, stream));
@@ -140,7 +141,7 @@ template <Hardware HardwareFromV, Hardware HardwareToV>
 
 template <MemcpyType MemcpyTypeT>
 using MemCpyStreamT =
-    typename std::conditional_t<MemcpyTypeT >= MemcpyType::HostToDevice, Stream<Hardware::GPU>, Stream<Hardware::CPU>>;
+    typename std::conditional_t<MemcpyTypeT >= MemcpyType::HostToDevice, StreamView<Hardware::GPU>, StreamView<Hardware::CPU>>;
 
 template <MemcpyType MemcpyTypeT>
 struct MemCpyPartialTemplateSpecializer
@@ -168,7 +169,7 @@ constexpr void MemCpyPartialTemplateSpecializer<MemcpyTypeT>::memcpy_data<T>(con
     {
         cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToHost);
     }
-    else // if (MemcpyTypeT == MemcpyType::DeviceToDevice)
+    else  // if (MemcpyTypeT == MemcpyType::DeviceToDevice)
     {
         cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToDevice);
     }
@@ -193,7 +194,7 @@ constexpr void MemCpyPartialTemplateSpecializer<MemcpyTypeT>::memcpy_data_async<
     {
         cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToHost, stream);
     }
-    else // if (MemcpyTypeT == MemcpyType::DeviceToDevice)
+    else  // if (MemcpyTypeT == MemcpyType::DeviceToDevice)
     {
         cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToDevice, stream);
     }
@@ -270,7 +271,7 @@ struct MemsetPartialTemplateSpecializer
     constexpr static void memset_data(T* ptr, T val, size_t num_bytes);
 
     template <typename T>
-    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, Stream<HardwareV>& stream);
+    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, StreamView<HardwareV>& stream);
 };
 
 #ifdef __CUDACC__
@@ -282,7 +283,7 @@ constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data<T>(T* pt
     {
         std::memset(ptr, val, num_bytes);
     }
-    else // if (hardware == MemcpyType::HostToDevice)
+    else  // if (hardware == MemcpyType::HostToDevice)
     {
         cudaMemset(ptr, val, num_bytes);
     }
@@ -293,13 +294,13 @@ template <typename T>
 constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data_async<T>(T* ptr,
                                                                                  T val,
                                                                                  size_t num_bytes,
-                                                                                 Stream<HardwareV>& stream)
+                                                                                 StreamView<HardwareV>& stream)
 {
     if constexpr (HardwareV == Hardware::CPU)
     {
         std::memset(ptr, val, num_bytes);
     }
-    else // if (hardware == MemcpyType::HostToDevice)
+    else  // if (hardware == MemcpyType::HostToDevice)
     {
         cudaMemsetAsync(ptr, val, num_bytes, stream);
     }
@@ -344,4 +345,4 @@ constexpr void memset_async(HardwareUniquePtrT& ptr, T val, size_t num_bytes, St
 }
 
 
-} // namespace cute
+}  // namespace cute

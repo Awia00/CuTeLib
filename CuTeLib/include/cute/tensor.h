@@ -258,4 +258,4 @@ template <typename T, Hardware HardwareV, typename Traits = TensorTraits>
 using Cube = Tensor<T, 3, HardwareV, Traits>;
 
 
-} // namespace cute
+}  // namespace cute

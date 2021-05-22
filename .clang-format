@@ -12,7 +12,7 @@ AlwaysBreakBeforeMultilineStrings: false
 AlwaysBreakTemplateDeclarations: true
 BinPackParameters: false
 BinPackArguments: false
-BreakBeforeBinaryOperators: false
+BreakBeforeBinaryOperators: true
 BreakBeforeBraces: Allman
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: true
@@ -38,7 +38,7 @@ PenaltyReturnTypeOnItsOwnLine: 120
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 1
+SpacesBeforeTrailingComments: 2
 SpacesInAngles: false
 SpacesInCStyleCastParentheses: false
 SpacesInContainerLiterals: false
@@ -48,3 +48,10 @@ TabWidth: 4
 UseTab: Never
 AlignOperands: true
 PointerAlignment: Left
+IncludeCategories:
+  - Regex:           '<[([:alnum:]|\_).]+>' # stl does not have '/'
+    Priority:        1
+    SortPriority:    1
+  - Regex:           '.*'
+    Priority:        2
+    SortPriority:    2

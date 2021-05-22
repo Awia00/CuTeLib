@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <cute/defs.h>
 #include <cute/hardware.h>
 #ifdef __CUDACC__
@@ -11,10 +12,10 @@ namespace cute
 {
 
 template <Hardware HardwareV>
-class Event;
+class EventView;
 
 template <Hardware HardwareV>
-class Stream
+class StreamView
 {
     // no specific implementation for CPU - feel free to specialize
     public:
@@ -23,18 +24,77 @@ class Stream
     }
 };
 
+template <Hardware HardwareV>
+class Stream : public StreamView<HardwareV>
+{
+};
+
 #ifdef __CUDACC__
 
+
 template <>
-class Stream<Hardware::GPU>
+class StreamView<Hardware::GPU>
 {
+    using MyT = StreamView<Hardware::GPU>;
+
+    protected:
     cudaStream_t native_stream_;
 
+    StreamView() : native_stream_()
+    {
+    }
+
     public:
-    Stream()
+    explicit StreamView(cudaStream_t stream) : native_stream_(stream)
+    {
+    }
+
+    protected:
+    public:
+    void synchronize()
+    {
+        cudaStreamSynchronize(this->native_stream_);
+    }
+
+    /**
+     * @brief on the stream, enqueue waiting for the event given as argument.
+     *
+     * @param event
+     */
+    void wait_for(EventView<Hardware::GPU>& event);
+
+    operator cudaStream_t&()
+    {
+        return this->native_stream_;
+    }
+
+    operator const cudaStream_t&() const
+    {
+        return this->native_stream_;
+    }
+
+    static MyT stream_per_thread()
+    {
+        return MyT(cudaStreamPerThread);
+    }
+};
+
+/**
+ * @brief Stream is an owning version of Stream.
+ *
+ */
+template <>
+class Stream<Hardware::GPU> : public StreamView<Hardware::GPU>
+{
+    using BaseT = StreamView<Hardware::GPU>;
+    using MyT = Stream<Hardware::GPU>;
+
+    public:
+    Stream() : BaseT()
     {
         cudaStreamCreate(&this->native_stream_);
     }
+
     Stream(uint32_t flags)
     {
         cudaStreamCreateWithFlags(&this->native_stream_, flags);
@@ -50,20 +110,22 @@ class Stream<Hardware::GPU>
         cudaStreamCreateWithPriority(&this->native_stream_, flags, priority);
     }
 
-    Stream(Stream&) = delete;
-    Stream<Hardware::GPU>& operator=(Stream&) = delete;
 
-    Stream(Stream&& o_stream) noexcept : native_stream_(std::move(o_stream.native_stream_))
+    Stream(MyT&) = delete;
+    MyT& operator=(MyT&) = delete;
+
+    Stream(MyT&& o_stream) noexcept : BaseT(std::move(o_stream.native_stream_))
     {
         o_stream.native_stream_ = nullptr;
     }
+
     /**
      * @brief Stream move assignment constructor. Notice that the current native stream will be destroyed.
      *
      * @param o_stream
-     * @return Stream<Hardware::GPU>&
+     * @return Stream&
      */
-    Stream<Hardware::GPU>& operator=(Stream&& o_stream)
+    MyT& operator=(MyT&& o_stream) noexcept
     {
         cudaStreamDestroy(this->native_stream_);
         this->native_stream_ = std::move(o_stream.native_stream_);
@@ -75,90 +137,58 @@ class Stream<Hardware::GPU>
     {
         cudaStreamDestroy(this->native_stream_);
     }
-
-    // interface
-
-    void synchronize()
-    {
-        cudaStreamSynchronize(this->native_stream_);
-    }
-
-    /**
-     * @brief on the stream, enqueue waiting for the event given as argument.
-     *
-     * @param event
-     */
-    void wait_for(Event<Hardware::GPU>& event);
-
-    operator cudaStream_t&()
-    {
-        return this->native_stream_;
-    }
-
-    operator const cudaStream_t&() const
-    {
-        return this->native_stream_;
-    }
 };
+
+template <Hardware HardwareV>
+Stream<HardwareV> make_stream()
+{
+    return Stream<HardwareV>();
+}
+
+template <Hardware HardwareV>
+Stream<HardwareV> make_stream(uint32_t flags)
+{
+    return Stream<HardwareV>(flags);
+}
+
+template <Hardware HardwareV>
+Stream<HardwareV> make_stream(uint32_t flags, int32_t priority)
+{
+    return Stream<HardwareV>(flags, priority);
+}
 
 #endif
 
 // Events
 
 template <Hardware HardwareV>
-class Event
+class EventView
 {
     // no specific implementation for CPU
 };
 
+template <Hardware HardwareV>
+class Event : public EventView<HardwareV>
+{
+    // no specific implementation for CPU
+};
 
 #ifdef __CUDACC__
 constexpr uint32_t EVENT_GPU_FLAGS_MAX_PERFORMANCE = cudaEventDisableTiming;
 
 template <>
-class Event<Hardware::GPU>
+class EventView<Hardware::GPU>
 {
+    protected:
     cudaEvent_t native_event_;
 
+    EventView() : native_event_()
+    {
+    }
+
     public:
-    Event()
+    EventView(cudaEvent_t event) : native_event_(event)
     {
-        cudaEventCreate(&this->native_event_);
-    }
-
-    /**
-     * @brief Construct a new Event object
-     *
-     * @param flags for max performance pass in cudaEventDisableTiming as per CUDA documentation
-     */
-    Event(uint32_t flags)
-    {
-        cudaEventCreateWithFlags(&this->native_event_, flags);
-    }
-    Event(Event&) = delete;
-    Event<Hardware::GPU>& operator=(Event&) = delete;
-
-    Event(Event&& o_event) noexcept : native_event_(std::move(o_event.native_event_))
-    {
-        o_event.native_event_ = nullptr;
-    }
-
-    /**
-     * @brief Move assignment constructor. Notice that the current native event will be destroyed.
-     *
-     * @param o_event
-     * @return Event<Hardware::GPU>&
-     */
-    Event<Hardware::GPU>& operator=(Event&& o_event)
-    {
-        cudaEventDestroy(this->native_event_);
-        this->native_event_ = std::move(o_event.native_event_);
-        o_event.native_event_ = nullptr;
-        return *this;
-    }
-    ~Event()
-    {
-        cudaEventDestroy(this->native_event_);
     }
 
     /**
@@ -166,7 +196,7 @@ class Event<Hardware::GPU>
      *
      * @param stream
      */
-    void record(Stream<Hardware::GPU>& stream)
+    void record(StreamView<Hardware::GPU>& stream)
     {
         cudaEventRecord(this->native_event_, stream);
     }
@@ -187,13 +217,62 @@ class Event<Hardware::GPU>
     }
 };
 
-void Stream<Hardware::GPU>::wait_for(Event<Hardware::GPU>& event)
+void StreamView<Hardware::GPU>::wait_for(EventView<Hardware::GPU>& event)
 {
-    constexpr auto flag = 0; // flag must be 0, other values are only used for CUDA graphs
+    constexpr auto flag = 0;  // flag must be 0, other values are only used for CUDA graphs
     cudaStreamWaitEvent(this->native_stream_, event, flag);
 }
+
+template <>
+class Event<Hardware::GPU> : public EventView<Hardware::GPU>
+{
+    using BaseT = EventView<Hardware::GPU>;
+    using MyT = Event<Hardware::GPU>;
+
+    public:
+    Event() : BaseT()
+    {
+        cudaEventCreate(&this->native_event_);
+    }
+
+    /**
+     * @brief Construct a new Event object
+     *
+     * @param flags for max performance pass in cudaEventDisableTiming as per CUDA documentation
+     */
+    explicit Event(uint32_t flags)
+    {
+        cudaEventCreateWithFlags(&this->native_event_, flags);
+    }
+    Event(MyT&) = delete;
+    MyT& operator=(MyT&) = delete;
+
+    Event(MyT&& o_event) noexcept : BaseT(std::move(o_event.native_event_))
+    {
+        o_event.native_event_ = nullptr;
+    }
+
+    /**
+     * @brief Move assignment constructor. Notice that the current native event will be destroyed.
+     *
+     * @param o_event
+     * @return Event<Hardware::GPU>&
+     */
+    MyT& operator=(MyT&& o_event)
+    {
+        cudaEventDestroy(this->native_event_);
+        this->native_event_ = std::move(o_event.native_event_);
+        o_event.native_event_ = nullptr;
+        return *this;
+    }
+
+    ~Event()
+    {
+        cudaEventDestroy(this->native_event_);
+    }
+};
 
 #endif
 
 
-} // namespace cute
+}  // namespace cute
