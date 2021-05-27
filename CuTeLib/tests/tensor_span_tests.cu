@@ -1,3 +1,4 @@
+#include <iostream>
 #include "test_utils.h"
 #include <cute/array.h>
 #include <cute/tensor.h>
@@ -5,7 +6,6 @@
 #include <cute/tensor_span.h>
 #include <cute/unique_ptr.h>
 #include <doctest/doctest.h>
-#include <iostream>
 
 
 namespace cute
@@ -113,7 +113,7 @@ TEST_SUITE("tensor_span")
         auto counter = 0;
         for (auto i = 0; i < iota_tensor.shape(0); i++)
         {
-            auto span_i = span[i]; // 1d span
+            auto span_i = span[i];  // 1d span
             for (auto j = 0; j < iota_tensor.shape(1); j++)
             {
                 CHECK(span_i[j] == counter++);
@@ -128,10 +128,10 @@ TEST_SUITE("tensor_span")
         auto counter = 0;
         for (auto i = 0; i < iota_tensor.shape(0); i++)
         {
-            auto span_i = span[i]; // 2d span
+            auto span_i = span[i];  // 2d span
             for (auto j = 0; j < iota_tensor.shape(1); j++)
             {
-                auto span_i_j = span_i[j]; // 1d span
+                auto span_i_j = span_i[j];  // 1d span
                 for (auto k = 0; k < iota_tensor.shape(2); k++)
                 {
                     CHECK(span_i_j[k] == counter++);
@@ -144,20 +144,17 @@ TEST_SUITE("tensor_span")
     TEST_CASE("transfer")
     {
         const auto cpu_tensor = iota<int32_t>(shape(2, 2));
-        auto cpu_transfered = cpu_tensor.transfer<Hardware::CPU>(); // just a regular copy
+        auto cpu_transfered = cpu_tensor.transfer<Hardware::CPU>();  // just a regular copy
 
-        CHECK(cpu_tensor.data() != cpu_transfered.data()); // its not the same memory
-        check_tensors(cpu_transfered, cpu_tensor); // but it is the same values
+        CHECK(cpu_tensor.data() != cpu_transfered.data());  // its not the same memory
+        check_tensors(cpu_transfered, cpu_tensor);  // but it is the same values
 
         auto gpu_transfered = cpu_transfered.transfer<Hardware::GPU>();
-        CHECK(gpu_transfered.data() != cpu_transfered.data()); // its not the same memory
-
-        // Trying to do `gpu_transfered.get_span().elem(1)` gives the error:
-        //   static assertion failed with "Trying to access gpu elements on the cpu"
+        CHECK(gpu_transfered.data() != cpu_transfered.data());  // its not the same memory
 
         auto moved_back = gpu_transfered.transfer<Hardware::CPU>();
         check_tensors(moved_back, cpu_tensor);
     }
 }
 
-} // namespace cute
+}  // namespace cute

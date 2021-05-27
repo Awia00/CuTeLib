@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cute/array.h>
-#include <cute/tensor.h>
 #include <numeric>
 #include <random>
+#include <utility>
+#include <cute/array.h>
+#include <cute/tensor.h>
 
 namespace cute
 {
@@ -12,7 +13,7 @@ namespace cute
 template <typename T, typename ShapesT>
 [[nodiscard]] auto iota(ShapesT args, T initial = 0)
 {
-    auto result = Tensor<T, ShapesT::size(), Hardware::CPU>(std::move(args));
+    auto result = Tensor<T, ShapesT::size(), Hardware::CPU>(std::forward<ShapesT>(args));
     std::iota(result.begin(), result.end(), initial);
     return result;
 }
@@ -30,17 +31,20 @@ template <typename T, typename ShapesT>
 [[nodiscard]] auto random(ShapesT args)
 {
     auto result = Tensor<T, ShapesT::size(), Hardware::CPU>(std::move(args));
-    std::generate(result.begin(), result.end(), []() {
-        if constexpr (std::is_floating_point_v<T>)
-        {
-            return std::rand() / float(RAND_MAX);
-        }
-        else
-        {
-            return T(std::rand());
-        }
-    });
+    std::generate(result.begin(),
+                  result.end(),
+                  []()
+                  {
+                      if constexpr (std::is_floating_point_v<T>)
+                      {
+                          return std::rand() / T(RAND_MAX);
+                      }
+                      else
+                      {
+                          return T(std::rand());
+                      }
+                  });
     return result;
 }
 
-} // namespace cute
+}  // namespace cute

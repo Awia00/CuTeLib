@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <memory>
 #include <vector>
 #include <cute/hardware.h>
@@ -41,6 +42,10 @@ struct NewFunctorCPU
     }
 
     [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView<Hardware::CPU>& stream) noexcept
+    {
+        return new TBase[num_elements];
+    }
+    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView<Hardware::GPU>& stream) noexcept
     {
         return new TBase[num_elements];
     }
@@ -95,7 +100,7 @@ template <typename T, Hardware HardwareV>
 
 template <typename T, Hardware HardwareV>
 [[nodiscard]] constexpr HardwareUniquePtr<T, HardwareV> make_unique_async(size_t num_elements,
-                                                                          StreamView<HardwareV>& stream)
+                                                                          StreamView<Hardware::GPU>& stream)
 {
     static_assert(std::is_array_v<T>, "Must be array type");
     return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements, stream));
@@ -271,7 +276,7 @@ struct MemsetPartialTemplateSpecializer
     constexpr static void memset_data(T* ptr, T val, size_t num_bytes);
 
     template <typename T>
-    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, StreamView<HardwareV>& stream);
+    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, StreamView<Hardware::GPU>& stream);
 };
 
 #ifdef __CUDACC__
@@ -294,7 +299,7 @@ template <typename T>
 constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data_async<T>(T* ptr,
                                                                                  T val,
                                                                                  size_t num_bytes,
-                                                                                 StreamView<HardwareV>& stream)
+                                                                                 StreamView<Hardware::GPU>& stream)
 {
     if constexpr (HardwareV == Hardware::CPU)
     {
@@ -318,7 +323,7 @@ struct MemsetPartialTemplateSpecializer<Hardware::CPU>
     }
 
     template <typename T>
-    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, Stream<Hardware::CPU>& stream)
+    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, Stream<Hardware::GPU>& stream)
     {
         std::memset(ptr, val, num_bytes);
     }

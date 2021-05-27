@@ -13,7 +13,7 @@ target_include_directories(
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_compile_features(${LIB_NAME} INTERFACE cxx_std_17)
-target_compile_options(${LIB_NAME} INTERFACE "$<$<COMPILE_LANG_AND_ID:CUDA,NVCC>:--default-stream per-thread>")
+target_compile_options(${LIB_NAME} INTERFACE "$<$<COMPILE_LANG_AND_ID:CUDA,NVCC>:--default-stream per-thread --expt-relaxed-constexpr>")
 
 
 # == Install ==

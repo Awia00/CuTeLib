@@ -1,4 +1,5 @@
 #pragma once
+#include <utility>
 #include <cute/array.h>
 #include <cute/defs.h>
 #include <cute/hardware.h>
@@ -108,17 +109,17 @@ class [[nodiscard]] TensorSpanBase
     }
 
     template <int32_t DimV, typename... Args>
-    CUTE_DEV_HOST [[nodiscard]] constexpr index_type index(index_type index_sum, index_type index, Args... args) const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr index_type index(index_type index_sum, index_type index, Args&&... args) const noexcept
     {
         static_assert(DimV < RankV, "DimV was more than RankV-1");
         static_assert(DimV >= 0, "DimV was less than 0");
 
         // For RankV == 1, stride should be optimized away by the compiler since it is 1
-        return this->index<DimV + 1>(index_sum * this->shape<DimV>() + index, args...);
+        return this->index<DimV + 1>(index_sum * this->shape<DimV>() + index, std::forward<Args>(args)...);
     }
 };
 
-} // namespace
+}  // namespace
 
 
 template <typename T, int32_t RankV, Hardware HardwareV, typename Traits = TensorSpanTraits>
@@ -251,6 +252,30 @@ std::ostream& operator<<(std::ostream& stream, const TensorSpan<T, 2, Hardware::
     return stream;
 }
 
+template <typename TensorLikeT>
+bool equal(const TensorLikeT& first, const TensorLikeT& other)
+{
+    static_assert(TensorLikeT::hardware() == Hardware::CPU, "Only supports CPU tensors currently");
+    if (first.get_shape() == other.get_shape())
+    {
+        return std::equal(first.begin(), first.end(), other.begin());
+    }
+    return false;
+}
+
+template <typename TensorLikeFromT, typename TensorLikeToT, typename StreamT>
+void copy_async(const TensorLikeFromT& from, TensorLikeToT& to, StreamT& stream)
+{
+    assert(from.get_shape() == to.get_shape());
+    constexpr auto memcpy_type = get_memcpy_type<TensorLikeFromT::hardware(), TensorLikeToT::hardware()>();
+    using T = std::remove_all_extents_t<typename TensorLikeToT::value_type>;
+
+    MemCpyPartialTemplateSpecializer<memcpy_type>::template memcpy_data_async<T>(from.data(),
+                                                                                 to.data(),
+                                                                                 from.size(),
+                                                                                 stream);
+}
+
 template <typename T, Hardware HardwareV, typename Traits = TensorSpanTraits>
 using VectorSpan = TensorSpan<T, 1, HardwareV, Traits>;
 
@@ -287,4 +312,4 @@ template <typename... Args>
     return Array<TensorSpanTraits::shape_type, sizeof...(Args)>{ args... };
 }
 
-} // namespace cute
+}  // namespace cute

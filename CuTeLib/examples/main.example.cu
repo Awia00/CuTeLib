@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <cute/array.h>
+#include <cute/graph.h>
 #include <cute/stream.h>
 #include <cute/tensor.h>
 #include <cute/tensor_generators.h>
@@ -183,18 +184,12 @@ void kernel_use_example()
     auto out = Tensor<float, 1, Hardware::GPU>(shape(32));
     my_kernel<<<1, 128>>>(x.get_span(), y.get_span(), out.get_span());
 
-    std::cout << out.transfer<Hardware::CPU>() << std::endl;
+    std::cout << "simple kernel: " << out.transfer<Hardware::CPU>() << std::endl;
 }
 
 
 namespace  /// example_id="cutelib_stream"
 {
-#include <cuda.h>
-#include <cute/array.h>
-#include <cute/tensor.h>
-#include <cute/tensor_generators.h>
-#include <cute/tensor_span.h>
-#include <cute/unique_ptr.h>
 
 void cutelib_stream()
 {
@@ -210,11 +205,46 @@ void cutelib_stream()
     auto res = out.transfer_async<Hardware::CPU>(stream);
     stream.synchronize();  // wait for the kernels to finish and transfer to cpu
 
-    std::cout << res << std::endl;
+    std::cout << "stream: " << res << std::endl;
 }
+
 
 }  // namespace
 
+
+namespace  /// example_id="cutelib_graph"
+{
+
+void cutelib_graph()
+{
+    const auto x = cute::iota<float>(shape(32)).transfer<Hardware::GPU>();
+    const auto y = cute::random<float>(shape(32)).transfer<Hardware::GPU>();
+    auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));
+
+    auto stream = cute::make_stream<Hardware::GPU>();
+    auto graph = cute::Graph<Hardware::GPU>();
+
+    auto res = cute::Tensor<float, 1, Hardware::CPU>(cute::shape(32));
+    {
+        // RAII style recording (stop on destruction)
+        auto recorder = graph.start_recording(stream);
+
+        auto shared_mem_size = 0;
+        saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, x, y, out);
+        saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, y, x, out);
+
+        cute::copy_async(out, res, stream);
+        // can also explicitly call: `recorder.stop_recording()`
+    }
+
+    auto instance = graph.get_instance();
+    instance.launch(stream);
+    stream.synchronize();  // wait for the kernels to finish and transfer to cpu
+
+    std::cout << "graph: " << res << std::endl;
+}
+
+}  // namespace
 
 }  // namespace cute
 
@@ -229,6 +259,7 @@ int main()
     cute::tensor_span_examples();
     cute::kernel_use_example();
     cute::cutelib_stream();
+    cute::cutelib_graph();
 
     std::cout << "Done" << std::endl;
     return 0;

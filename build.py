@@ -2,9 +2,10 @@
 Builds and installs the project
 """
 
-import subprocess
 import os
 import shutil
+import subprocess
+import time
 
 
 def ensure_build_type(build_type):
@@ -25,6 +26,7 @@ def build_cpp(args):
         install_folder = "inst"
 
         if args.fresh:
+            time.sleep(1)
             shutil.rmtree(build_folder, ignore_errors=True)
             shutil.rmtree(install_folder, ignore_errors=True)
 

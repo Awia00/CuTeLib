@@ -1,5 +1,7 @@
 #pragma once
+
 #include <memory>
+#include <utility>
 #include <cute/defs.h>
 #include <cute/hardware.h>
 #ifdef __CUDACC__
@@ -49,6 +51,19 @@ class StreamView<Hardware::GPU>
     {
     }
 
+    StreamView(MyT&) = delete;
+    MyT& operator=(MyT&) = delete;
+    StreamView(MyT&& other) : native_stream_(std::move(other.native_stream_))
+    {
+        other.native_stream_ = nullptr;
+    }
+    MyT& operator=(MyT&& other)
+    {
+        this->native_stream_ = other.native_stream_;
+        other.native_stream_ = nullptr;
+        return *this;
+    }
+
     protected:
     public:
     void synchronize()
@@ -73,6 +88,11 @@ class StreamView<Hardware::GPU>
         return this->native_stream_;
     }
 
+    /**
+     * @brief Returns the dedicated stream-per-thread
+     *
+     * @return StreamView<HardwareV>
+     */
     static MyT stream_per_thread()
     {
         return MyT(cudaStreamPerThread);
@@ -217,7 +237,7 @@ class EventView<Hardware::GPU>
     }
 };
 
-void StreamView<Hardware::GPU>::wait_for(EventView<Hardware::GPU>& event)
+inline void StreamView<Hardware::GPU>::wait_for(EventView<Hardware::GPU>& event)
 {
     constexpr auto flag = 0;  // flag must be 0, other values are only used for CUDA graphs
     cudaStreamWaitEvent(this->native_stream_, event, flag);

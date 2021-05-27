@@ -1,4 +1,6 @@
 #pragma once
+#include <memory>
+#include <utility>
 #include <cute/array.h>
 #include <cute/defs.h>
 #include <cute/tensor_span.h>
@@ -49,6 +51,20 @@ class Tensor
         }
     }
 
+    template <typename StreamT>
+    Tensor(Array<shape_type, RankV> shape, StreamT& stream) noexcept
+      : data_(cute::make_unique_async<T[], HardwareV>(shape.template mul<size_type>(), stream))
+      , shape_(std::move(shape))
+    {
+        static_assert(!std::is_array_v<T>, "T should not be a array type");
+        static_assert(!std::is_const_v<T>, "T should not be const");
+
+        if constexpr (Traits::zero_initialize)
+        {
+            memset_async(this->data_, T(), this->size() * sizeof(T), stream);
+        }
+    }
+
     Tensor(const std::initializer_list<T>& init_list, Array<shape_type, RankV> shape) noexcept
       : data_(cute::make_unique<T[], HardwareV>(shape.template mul<size_type>())), shape_(std::move(shape))
     {
@@ -69,6 +85,18 @@ class Tensor
         static_assert(!std::is_const_v<T>, "T should not be const");
 
         memcpy(other_tensor.data_ptr(), this->data_, other_tensor.size());
+    }
+
+    // Templated copy constructor
+    template <typename OtherTensorT, typename StreamT>
+    Tensor(const OtherTensorT& other_tensor, StreamT& stream) noexcept
+      : data_(cute::make_unique_async<T[], HardwareV>(other_tensor.get_shape().template mul<size_type>(), stream))
+      , shape_(other_tensor.get_shape())
+    {
+        static_assert(!std::is_array_v<T>, "T should not be a array type");
+        static_assert(!std::is_const_v<T>, "T should not be const");
+
+        memcpy_async(other_tensor.data_ptr(), this->data_, other_tensor.size(), stream);
     }
 
     ///
@@ -128,20 +156,8 @@ class Tensor
     template <Hardware ToHardwareV, typename StreamT>
     Tensor<T, RankV, ToHardwareV> transfer_async(StreamT& stream) const
     {
-        auto res = Tensor<T, RankV, ToHardwareV>(this->shape_);
-        this->transfer_async<ToHardwareV, StreamT>(stream, res);
+        auto res = Tensor<T, RankV, ToHardwareV>(*this, stream);
         return res;
-    }
-    template <Hardware ToHardwareV, typename StreamT>
-    void transfer_async(StreamT& stream, const TensorSpan<T, RankV, ToHardwareV>& out) const
-    {
-        assert(this->shape_ == out.get_shape());
-        constexpr auto memcpy_type = get_memcpy_type<HardwareV, ToHardwareV>();
-
-        MemCpyPartialTemplateSpecializer<memcpy_type>::template memcpy_data_async<T>(this->data(),
-                                                                                     out.data(),
-                                                                                     this->size(),
-                                                                                     stream);
     }
 
     static constexpr Hardware hardware() noexcept

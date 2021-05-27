@@ -1,6 +1,7 @@
 #pragma once
-#include <cute/defs.h>
 #include <ostream>
+#include <utility>
+#include <cute/defs.h>
 
 namespace cute
 {
@@ -311,7 +312,7 @@ struct Array
 template <typename T, typename... Args>
 [[nodiscard]] constexpr auto array(T first, Args... args)
 {
-    return Array<T, sizeof...(Args) + 1>{ std::move(first), std::move(args)... };
+    return Array<T, sizeof...(Args) + 1>{ std::forward<T>(first), std::forward<Args>(args)... };
 }
 
 template <typename T, int32_t Length, typename Traits>
@@ -330,4 +331,23 @@ std::ostream& operator<<(std::ostream& stream, const Array<T, Length, Traits>& a
     return stream;
 }
 
-} // namespace cute
+#ifdef __CUDACC__
+
+static inline dim3 as_dim3(const Array<int32_t, 1>& arr, int32_t y = 1, int32_t z = 1)
+{
+    return dim3(arr[0], y, z);
+}
+
+static inline dim3 as_dim3(const Array<int32_t, 2>& arr, int32_t z = 1)
+{
+    return dim3(arr[0], arr[1], z);
+}
+
+static inline dim3 as_dim3(const Array<int32_t, 3>& arr)
+{
+    return dim3(arr[0], arr[1], arr[2]);
+}
+
+#endif
+
+}  // namespace cute
