@@ -29,7 +29,7 @@ TEST_SUITE("Streams")
         const auto input = cute::iota<int32_t>(shape);
         const auto expected_out = cute::iota<int32_t>(shape, ((iterations) * (iterations - 1)) / 2);
 
-        auto work = [&iterations, &input](StreamView<Hardware::GPU>& stream)
+        auto work = [&iterations, &input](StreamView& stream)
         {
             auto input_gpu = input.transfer_async<Hardware::GPU>(stream);
             for (auto i = 0; i < iterations; i++)
@@ -40,7 +40,7 @@ TEST_SUITE("Streams")
         };
         SUBCASE("Stream")
         {
-            auto stream = cute::make_stream<Hardware::GPU>();
+            auto stream = cute::Stream();
             auto res = work(stream);
             stream.synchronize();
             cute::equal(res, expected_out);
@@ -48,8 +48,8 @@ TEST_SUITE("Streams")
 
         SUBCASE("Graph")
         {
-            auto stream = cute::make_stream<Hardware::GPU>();
-            auto graph = cute::Graph<Hardware::GPU>();
+            auto stream = cute::Stream();
+            auto graph = cute::Graph();
 
             auto recorder = graph.start_recording(stream);
             auto res = work(stream);

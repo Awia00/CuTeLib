@@ -264,8 +264,8 @@ bool equal(const TensorLikeT& first, const TensorLikeT& other)
     return false;
 }
 
-template <typename TensorLikeFromT, typename TensorLikeToT, typename StreamT>
-void copy_async(const TensorLikeFromT& from, TensorLikeToT& to, StreamT& stream)
+template <typename TensorLikeFromT, typename TensorLikeToT>
+void copy_async(const TensorLikeFromT& from, TensorLikeToT& to, StreamView& stream)
 {
     assert(from.get_shape() == to.get_shape());
     constexpr auto memcpy_type = get_memcpy_type<TensorLikeFromT::hardware(), TensorLikeToT::hardware()>();

@@ -6,29 +6,18 @@
 namespace cute
 {
 
-template <Hardware HardwareV>
-struct GraphInstance
-{
-    // no specific implementation for CPU - feel free to specialize
-};
-
-
-template <Hardware HardwareV>
-struct Graph
-{
-    // no specific implementation for CPU - feel free to specialize
-};
 
 #ifdef __CUDACC__
 
-template <>
-struct GraphInstance<Hardware::GPU>
+struct Graph;
+
+struct GraphInstance
 {
     private:
     cudaGraphExec_t native_instance_;
 
     public:
-    explicit GraphInstance(const Graph<Hardware::GPU>& graph);
+    explicit GraphInstance(const Graph& graph);
 
     GraphInstance(const GraphInstance&) = delete;
     GraphInstance& operator=(const GraphInstance&) = delete;
@@ -48,15 +37,14 @@ struct GraphInstance<Hardware::GPU>
         cudaGraphExecDestroy(this->native_instance_);
     }
 
-    void launch(StreamView<Hardware::GPU>& stream)
+    void launch(StreamView& stream)
     {
         cudaGraphLaunch(this->native_instance_, stream);
     }
 };
 
 
-template <>
-struct Graph<Hardware::GPU>
+struct Graph
 {
     private:
     cudaGraph_t native_graph_;
@@ -87,9 +75,9 @@ struct Graph<Hardware::GPU>
         cudaGraphDestroy(this->native_graph_);
     }
 
-    [[nodiscard]] GraphInstance<Hardware::GPU> get_instance()
+    [[nodiscard]] GraphInstance get_instance()
     {
-        return GraphInstance<Hardware::GPU>(*this);
+        return GraphInstance(*this);
     }
 
     operator cudaGraph_t&()
@@ -117,13 +105,11 @@ struct Graph<Hardware::GPU>
     {
         private:
         bool recording_;
-        StreamView<Hardware::GPU>& stream_;
-        Graph<Hardware::GPU>& graph_;
+        StreamView& stream_;
+        Graph& graph_;
 
         public:
-        StreamRecording(StreamView<Hardware::GPU>& stream,
-                        Graph<Hardware::GPU>& graph,
-                        cudaStreamCaptureMode mode = cudaStreamCaptureModeGlobal)
+        StreamRecording(StreamView& stream, Graph& graph, cudaStreamCaptureMode mode = cudaStreamCaptureModeGlobal)
           : recording_(true), stream_(stream), graph_(graph)
         {
             cudaStreamBeginCapture(this->stream_, mode);
@@ -149,15 +135,14 @@ struct Graph<Hardware::GPU>
     };
 
     public:
-    [[nodiscard]] StreamRecording start_recording(StreamView<Hardware::GPU>& stream,
-                                                  cudaStreamCaptureMode mode = cudaStreamCaptureModeGlobal)
+    [[nodiscard]] StreamRecording start_recording(StreamView& stream, cudaStreamCaptureMode mode = cudaStreamCaptureModeGlobal)
     {
         return StreamRecording(stream, *this, mode);
     }
 };
 
 
-GraphInstance<Hardware::GPU>::GraphInstance(const Graph<Hardware::GPU>& graph) : native_instance_()
+GraphInstance::GraphInstance(const Graph& graph) : native_instance_()
 {
     cudaGraphInstantiate(&this->native_instance_, graph, NULL, NULL, 0);
 }

@@ -98,7 +98,7 @@ void unique_ptr_examples()
                   ".get() is however the same type - so exercise regular care");
 
     // We can also allocate memory asynchrounously for GPUs
-    auto stream = cute::make_stream<Hardware::GPU>();
+    auto stream = cute::Stream();
     const auto uniq_async_gpu_ptr = cute::make_unique_async<float[], Hardware::GPU>(128, stream);
     stream.synchronize();
 
@@ -197,7 +197,7 @@ void cutelib_stream()
     const auto y = cute::random<float>(shape(32)).transfer<Hardware::GPU>();
     auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));
 
-    auto stream = cute::make_stream<Hardware::GPU>();
+    auto stream = cute::Stream();
     auto shared_mem_size = 0;
     saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, x, y, out);
     saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, y, x, out);
@@ -221,8 +221,8 @@ void cutelib_graph()
     const auto y = cute::random<float>(shape(32)).transfer<Hardware::GPU>();
     auto out = cute::Tensor<float, 1, Hardware::GPU>(cute::shape(32));
 
-    auto stream = cute::make_stream<Hardware::GPU>();
-    auto graph = cute::Graph<Hardware::GPU>();
+    auto stream = cute::Stream();
+    auto graph = cute::Graph();
 
     auto res = cute::Tensor<float, 1, Hardware::CPU>(cute::shape(32));
     {

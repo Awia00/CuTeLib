@@ -49,8 +49,7 @@ class Tensor
         }
     }
 
-    template <typename StreamT>
-    Tensor(Array<shape_type, RankV> shape, StreamT& stream) noexcept
+    Tensor(Array<shape_type, RankV> shape, StreamView& stream) noexcept
       : data_(cute::make_unique_async<T[], HardwareV>(shape.template mul<size_type>(), stream))
       , shape_(std::move(shape))
     {
@@ -86,8 +85,8 @@ class Tensor
     }
 
     // Templated copy constructor
-    template <typename OtherTensorT, typename StreamT>
-    Tensor(const OtherTensorT& other_tensor, StreamT& stream) noexcept
+    template <typename OtherTensorT>
+    Tensor(const OtherTensorT& other_tensor, StreamView& stream) noexcept
       : data_(cute::make_unique_async<T[], HardwareV>(other_tensor.get_shape().template mul<size_type>(), stream))
       , shape_(other_tensor.get_shape())
     {
@@ -151,8 +150,8 @@ class Tensor
         return Tensor<T, RankV, ToHardwareV, Traits>(*this);
     }
 
-    template <Hardware ToHardwareV, typename StreamT>
-    Tensor<T, RankV, ToHardwareV> transfer_async(StreamT& stream) const
+    template <Hardware ToHardwareV>
+    Tensor<T, RankV, ToHardwareV> transfer_async(StreamView& stream) const
     {
         auto res = Tensor<T, RankV, ToHardwareV>(*this, stream);
         return res;

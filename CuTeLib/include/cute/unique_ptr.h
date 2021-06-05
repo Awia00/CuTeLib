@@ -27,7 +27,7 @@ struct NewFunctorGPU
     constexpr NewFunctorGPU() noexcept = default;
 
     [[nodiscard]] constexpr auto operator()(size_t num_elements) const noexcept;
-    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView<Hardware::GPU>& stream) const noexcept;
+    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView& stream) const noexcept;
 };
 
 template <typename T>
@@ -41,11 +41,7 @@ struct NewFunctorCPU
         return new TBase[num_elements];
     }
 
-    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView<Hardware::CPU>& stream) noexcept
-    {
-        return new TBase[num_elements];
-    }
-    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView<Hardware::GPU>& stream) noexcept
+    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView& stream) noexcept
     {
         return new TBase[num_elements];
     }
@@ -69,8 +65,7 @@ template <typename T>
 }
 
 template <typename T>
-[[nodiscard]] constexpr auto NewFunctorGPU<T>::operator()(size_t num_elements,
-                                                          StreamView<Hardware::GPU>& stream) const noexcept
+[[nodiscard]] constexpr auto NewFunctorGPU<T>::operator()(size_t num_elements, StreamView& stream) const noexcept
 {
     using TBase = typename std::remove_all_extents_t<T>;
     TBase* ptr;
@@ -94,15 +89,14 @@ using HardwareUniquePtr = std::unique_ptr<T, HardwareDeleteFunctor<T, HardwareV>
 template <typename T, Hardware HardwareV>
 [[nodiscard]] constexpr HardwareUniquePtr<T, HardwareV> make_unique(size_t num_elements)
 {
-    static_assert(std::is_array_v<T>, "Must be array type");
+    static_assert(std::is_array_v<T>, "Must be array type");  // if not make_unique should receive arguments to construct T
     return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements));
 }
 
 template <typename T, Hardware HardwareV>
-[[nodiscard]] constexpr HardwareUniquePtr<T, HardwareV> make_unique_async(size_t num_elements,
-                                                                          StreamView<Hardware::GPU>& stream)
+[[nodiscard]] constexpr HardwareUniquePtr<T, HardwareV> make_unique_async(size_t num_elements, StreamView& stream)
 {
-    static_assert(std::is_array_v<T>, "Must be array type");
+    static_assert(std::is_array_v<T>, "Must be array type");  // if not make_unique should receive arguments to construct T
     return HardwareUniquePtr<T, HardwareV>(HardwareNewFunctor<T, HardwareV>()(num_elements, stream));
 }
 
@@ -145,16 +139,12 @@ template <Hardware HardwareFromV, Hardware HardwareToV>
 }
 
 template <MemcpyType MemcpyTypeT>
-using MemCpyStreamT =
-    typename std::conditional_t<MemcpyTypeT >= MemcpyType::HostToDevice, StreamView<Hardware::GPU>, StreamView<Hardware::CPU>>;
-
-template <MemcpyType MemcpyTypeT>
 struct MemCpyPartialTemplateSpecializer
 {
     template <typename T>
     constexpr static void memcpy_data(const T* from_ptr, T* to_ptr, size_t elements);
     template <typename T>
-    constexpr static void memcpy_data_async(const T* from_ptr, T* to_ptr, size_t elements, MemCpyStreamT<MemcpyTypeT>& stream);
+    constexpr static void memcpy_data_async(const T* from_ptr, T* to_ptr, size_t elements, StreamView& stream);
 };
 
 #ifdef __CUDACC__
@@ -185,7 +175,7 @@ template <typename T>
 constexpr void MemCpyPartialTemplateSpecializer<MemcpyTypeT>::memcpy_data_async<T>(const T* from_ptr,
                                                                                    T* to_ptr,
                                                                                    size_t elements,
-                                                                                   MemCpyStreamT<MemcpyTypeT>& stream)
+                                                                                   StreamView& stream)
 {
     if constexpr (MemcpyTypeT == MemcpyType::HostToHost)
     {
@@ -216,10 +206,7 @@ struct MemCpyPartialTemplateSpecializer<MemcpyType::HostToHost>
     }
 
     template <typename T>
-    constexpr static void memcpy_data_async(const T* from_ptr,
-                                            T* to_ptr,
-                                            size_t elements,
-                                            MemCpyStreamT<MemcpyType::HostToHost>& stream)
+    constexpr static void memcpy_data_async(const T* from_ptr, T* to_ptr, size_t elements, StreamView& stream)
     {
         std::copy(from_ptr, from_ptr + elements, to_ptr);
     }
@@ -242,8 +229,11 @@ constexpr void memcpy(const HardwareUniquePtrFromT& from_ptr, HardwareUniquePtrT
 }
 
 
-template <typename HardwareUniquePtrFromT, typename HardwareUniquePtrToT, typename StreamT>
-constexpr void memcpy_async(const HardwareUniquePtrFromT& from_ptr, HardwareUniquePtrToT& to_ptr, size_t elements, StreamT& stream)
+template <typename HardwareUniquePtrFromT, typename HardwareUniquePtrToT>
+constexpr void memcpy_async(const HardwareUniquePtrFromT& from_ptr,
+                            HardwareUniquePtrToT& to_ptr,
+                            size_t elements,
+                            StreamView& stream)
 {
     using FromRemRef = typename std::remove_reference_t<HardwareUniquePtrFromT>;
     using ToRemRef = typename std::remove_reference_t<HardwareUniquePtrToT>;
@@ -276,7 +266,7 @@ struct MemsetPartialTemplateSpecializer
     constexpr static void memset_data(T* ptr, T val, size_t num_bytes);
 
     template <typename T>
-    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, StreamView<Hardware::GPU>& stream);
+    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, StreamView& stream);
 };
 
 #ifdef __CUDACC__
@@ -299,7 +289,7 @@ template <typename T>
 constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data_async<T>(T* ptr,
                                                                                  T val,
                                                                                  size_t num_bytes,
-                                                                                 StreamView<Hardware::GPU>& stream)
+                                                                                 StreamView& stream)
 {
     if constexpr (HardwareV == Hardware::CPU)
     {
@@ -323,7 +313,7 @@ struct MemsetPartialTemplateSpecializer<Hardware::CPU>
     }
 
     template <typename T>
-    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, Stream<Hardware::GPU>& stream)
+    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, StreamView& stream)
     {
         std::memset(ptr, val, num_bytes);
     }
@@ -340,8 +330,8 @@ constexpr void memset(HardwareUniquePtrT& ptr, T val, size_t num_bytes)
     MemsetPartialTemplateSpecializer<hardware>::memset_data(ptr.get(), val, num_bytes);
 }
 
-template <typename HardwareUniquePtrT, typename T, typename StreamT>
-constexpr void memset_async(HardwareUniquePtrT& ptr, T val, size_t num_bytes, StreamT& stream)
+template <typename HardwareUniquePtrT, typename T>
+constexpr void memset_async(HardwareUniquePtrT& ptr, T val, size_t num_bytes, StreamView& stream)
 {
     using RemRef = typename std::remove_reference_t<HardwareUniquePtrT>;
     constexpr auto hardware = what_hardware<RemRef>();
