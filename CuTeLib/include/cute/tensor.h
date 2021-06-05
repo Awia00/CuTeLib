@@ -32,8 +32,6 @@ class Tensor
     using index_type = typename Traits::index_type;
     using value_type = T;
 
-    using MyT = Tensor<T, RankV, HardwareV, Traits>;
-
     private:
     HardwareUniquePtr<T[], HardwareV> data_;
     Array<shape_type, RankV> shape_;
@@ -102,7 +100,7 @@ class Tensor
     ///
     /// Templated copy assignment
     template <typename OtherTensorT>
-    MyT& operator=(const OtherTensorT& other_tensor) noexcept
+    Tensor& operator=(const OtherTensorT& other_tensor) noexcept
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
@@ -118,7 +116,7 @@ class Tensor
         return *this;
     }
 
-    Tensor(const MyT& other_tensor) noexcept
+    Tensor(const Tensor& other_tensor) noexcept
       : data_(cute::make_unique<T[], HardwareV>(other_tensor.get_shape().template mul<size_type>()))
       , shape_(other_tensor.get_shape())
     {
@@ -127,7 +125,7 @@ class Tensor
 
         memcpy(other_tensor.data_ptr(), this->data_, other_tensor.size());
     }
-    MyT& operator=(const MyT& other_tensor) noexcept
+    Tensor& operator=(const Tensor& other_tensor) noexcept
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
@@ -143,8 +141,8 @@ class Tensor
         return *this;
     }
 
-    Tensor(MyT&& other_tensor) noexcept = default;
-    MyT& operator=(MyT&& other_tensor) noexcept = default;
+    Tensor(Tensor&& other_tensor) noexcept = default;
+    Tensor& operator=(Tensor&& other_tensor) noexcept = default;
 
     /// Transfer copies this tensor to the specified hardware
     template <Hardware ToHardwareV>

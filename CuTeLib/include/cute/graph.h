@@ -24,21 +24,19 @@ struct Graph
 template <>
 struct GraphInstance<Hardware::GPU>
 {
-    using MyT = GraphInstance<Hardware::GPU>;
-
     private:
     cudaGraphExec_t native_instance_;
 
     public:
     explicit GraphInstance(const Graph<Hardware::GPU>& graph);
 
-    GraphInstance(const MyT&) = delete;
-    MyT& operator=(const MyT&) = delete;
-    GraphInstance(MyT&& other) : native_instance_(std::move(other.native_instance_))
+    GraphInstance(const GraphInstance&) = delete;
+    GraphInstance& operator=(const GraphInstance&) = delete;
+    GraphInstance(GraphInstance&& other) : native_instance_(std::move(other.native_instance_))
     {
         other.native_instance_ = nullptr;
     }
-    MyT& operator=(MyT&& other)
+    GraphInstance& operator=(GraphInstance&& other)
     {
         cudaGraphExecDestroy(this->native_instance_);
         this->native_instance_ = std::move(other.native_instance_);
@@ -60,8 +58,6 @@ struct GraphInstance<Hardware::GPU>
 template <>
 struct Graph<Hardware::GPU>
 {
-    using MyT = Graph<Hardware::GPU>;
-
     private:
     cudaGraph_t native_graph_;
 
@@ -72,13 +68,13 @@ struct Graph<Hardware::GPU>
         cudaGraphCreate(&this->native_graph_, flag);
     }
 
-    Graph(const MyT&) = delete;
-    MyT& operator=(const MyT&) = delete;
-    Graph(MyT&& other) : native_graph_(std::move(other.native_graph_))
+    Graph(const Graph&) = delete;
+    Graph& operator=(const Graph&) = delete;
+    Graph(Graph&& other) : native_graph_(std::move(other.native_graph_))
     {
         other.native_graph_ = nullptr;
     }
-    MyT& operator=(MyT&& other)
+    Graph& operator=(Graph&& other)
     {
         cudaGraphDestroy(this->native_graph_);
         this->native_graph_ = std::move(other.native_graph_);

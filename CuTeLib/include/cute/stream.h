@@ -33,12 +33,9 @@ class Stream : public StreamView<HardwareV>
 
 #ifdef __CUDACC__
 
-
 template <>
 class StreamView<Hardware::GPU>
 {
-    using MyT = StreamView<Hardware::GPU>;
-
     protected:
     cudaStream_t native_stream_;
 
@@ -51,13 +48,13 @@ class StreamView<Hardware::GPU>
     {
     }
 
-    StreamView(MyT&) = delete;
-    MyT& operator=(MyT&) = delete;
-    StreamView(MyT&& other) : native_stream_(std::move(other.native_stream_))
+    StreamView(StreamView&) = delete;
+    StreamView& operator=(StreamView&) = delete;
+    StreamView(StreamView&& other) : native_stream_(std::move(other.native_stream_))
     {
         other.native_stream_ = nullptr;
     }
-    MyT& operator=(MyT&& other)
+    StreamView& operator=(StreamView&& other)
     {
         this->native_stream_ = other.native_stream_;
         other.native_stream_ = nullptr;
@@ -93,9 +90,9 @@ class StreamView<Hardware::GPU>
      *
      * @return StreamView<HardwareV>
      */
-    static MyT stream_per_thread()
+    static StreamView stream_per_thread()
     {
-        return MyT(cudaStreamPerThread);
+        return StreamView(cudaStreamPerThread);
     }
 };
 
@@ -107,7 +104,6 @@ template <>
 class Stream<Hardware::GPU> : public StreamView<Hardware::GPU>
 {
     using BaseT = StreamView<Hardware::GPU>;
-    using MyT = Stream<Hardware::GPU>;
 
     public:
     Stream() : BaseT()
@@ -115,7 +111,7 @@ class Stream<Hardware::GPU> : public StreamView<Hardware::GPU>
         cudaStreamCreate(&this->native_stream_);
     }
 
-    Stream(uint32_t flags)
+    explicit Stream(uint32_t flags)
     {
         cudaStreamCreateWithFlags(&this->native_stream_, flags);
     }
@@ -131,10 +127,10 @@ class Stream<Hardware::GPU> : public StreamView<Hardware::GPU>
     }
 
 
-    Stream(MyT&) = delete;
-    MyT& operator=(MyT&) = delete;
+    Stream(Stream&) = delete;
+    Stream& operator=(Stream&) = delete;
 
-    Stream(MyT&& o_stream) noexcept : BaseT(std::move(o_stream.native_stream_))
+    Stream(Stream&& o_stream) noexcept : BaseT(std::move(o_stream.native_stream_))
     {
         o_stream.native_stream_ = nullptr;
     }
@@ -145,7 +141,7 @@ class Stream<Hardware::GPU> : public StreamView<Hardware::GPU>
      * @param o_stream
      * @return Stream&
      */
-    MyT& operator=(MyT&& o_stream) noexcept
+    Stream& operator=(Stream&& o_stream) noexcept
     {
         cudaStreamDestroy(this->native_stream_);
         this->native_stream_ = std::move(o_stream.native_stream_);
@@ -207,7 +203,7 @@ class EventView<Hardware::GPU>
     }
 
     public:
-    EventView(cudaEvent_t event) : native_event_(event)
+    explicit EventView(cudaEvent_t event) : native_event_(event)
     {
     }
 
@@ -247,7 +243,6 @@ template <>
 class Event<Hardware::GPU> : public EventView<Hardware::GPU>
 {
     using BaseT = EventView<Hardware::GPU>;
-    using MyT = Event<Hardware::GPU>;
 
     public:
     Event() : BaseT()
@@ -264,10 +259,10 @@ class Event<Hardware::GPU> : public EventView<Hardware::GPU>
     {
         cudaEventCreateWithFlags(&this->native_event_, flags);
     }
-    Event(MyT&) = delete;
-    MyT& operator=(MyT&) = delete;
+    Event(Event&) = delete;
+    Event& operator=(Event&) = delete;
 
-    Event(MyT&& o_event) noexcept : BaseT(std::move(o_event.native_event_))
+    Event(Event&& o_event) noexcept : BaseT(std::move(o_event.native_event_))
     {
         o_event.native_event_ = nullptr;
     }
@@ -278,7 +273,7 @@ class Event<Hardware::GPU> : public EventView<Hardware::GPU>
      * @param o_event
      * @return Event<Hardware::GPU>&
      */
-    MyT& operator=(MyT&& o_event)
+    Event& operator=(Event&& o_event)
     {
         cudaEventDestroy(this->native_event_);
         this->native_event_ = std::move(o_event.native_event_);
