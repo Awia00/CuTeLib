@@ -45,7 +45,7 @@ template <typename T, typename ShapesT>
     }
     else
     {
-        static_assert(false, "cute::random does not support the given Type T for this function");
+        static_assert(always_false<T>, "cute::random does not support the given Type T for this function");
     }
     return result;
 }

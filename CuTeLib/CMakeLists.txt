@@ -80,6 +80,7 @@ if(CUTELIB_BUILD_EXAMPLES)
         ${EXAMPLES_NAME}
         PROPERTIES CUDA_SEPARABLE_COMPILATION ON
     )
+    target_compile_options(${EXAMPLES_NAME} PRIVATE "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
 
     # == Install ==
     install(

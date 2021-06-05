@@ -41,7 +41,7 @@
 #endif
 
 // Restrictiveness
-#if defined(__CUDA_ARCH__) || defined(__CUDACC__)
+#if defined(__CUDA_ARCH__) || defined(__CUDACC__) || defined(__GNUG__)
 #define CUTE_RESTRICT __restrict__
 #else
 #define CUTE_RESTRICT __restrict
@@ -50,6 +50,9 @@
 
 namespace cute
 {
+
+template <class... T>
+constexpr bool always_false = false;
 
 template <typename T, bool RestrictedV>
 using restricted_ptr = typename std::conditional<RestrictedV, T * CUTE_RESTRICT, T*>::type;

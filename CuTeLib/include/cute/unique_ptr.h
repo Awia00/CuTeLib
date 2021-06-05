@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <cstring>
 #include <memory>
 #include <vector>
 #include <cute/hardware.h>

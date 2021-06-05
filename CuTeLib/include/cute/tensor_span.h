@@ -36,8 +36,8 @@ class [[nodiscard]] TensorSpanBase
     using shape_type = typename Traits::shape_type;
     using size_type = typename Traits::size_type;
     using index_type = typename Traits::index_type;
-    using value_type = typename T;
-    using ptr_type = typename restricted_ptr<T, Traits::is_rescricted()>;
+    using value_type = T;
+    using ptr_type = restricted_ptr<T, Traits::is_rescricted()>;
 
     protected:
     ptr_type data_;
@@ -131,7 +131,7 @@ class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV
     using shape_type = typename Traits::shape_type;
     using size_type = typename Traits::size_type;
     using index_type = typename Traits::index_type;
-    using value_type = typename T;
+    using value_type = T;
 
     CUTE_DEV_HOST constexpr TensorSpan(T* data, Array<shape_type, RankV> shape)
       : BaseT(data, std::move(shape))
@@ -181,7 +181,7 @@ class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpa
     using shape_type = typename Traits::shape_type;
     using size_type = typename Traits::size_type;
     using index_type = typename Traits::index_type;
-    using value_type = typename T;
+    using value_type = T;
 
     CUTE_DEV_HOST constexpr TensorSpan(T* data, Array<shape_type, 1> shape)
       : BaseT(data, std::move(shape))

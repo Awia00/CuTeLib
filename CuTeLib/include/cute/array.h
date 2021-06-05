@@ -14,7 +14,7 @@ struct ArrayTraits
 template <typename T, int32_t Length, typename Traits = ArrayTraits>
 struct Array
 {
-    using value_type = typename T;
+    using value_type = T;
     using size_type = typename ArrayTraits::size_type;
     using index_type = typename ArrayTraits::index_type;
 
@@ -286,8 +286,8 @@ struct Array
         return res;
     }
 
-    template <typename T, int32_t Length, typename Traits>
-    friend std::ostream& operator<<(std::ostream&, const Array<T, Length, Traits>& arr);
+    template <typename _T, int32_t _Length, typename _Traits>
+    friend std::ostream& operator<<(std::ostream&, const Array<_T, _Length, _Traits>& arr);
 };
 
 ///
