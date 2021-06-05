@@ -17,6 +17,7 @@ struct TensorSpanTraits
 
     constexpr static bool is_rescricted()
     {
+        // Unfortunately CUDA has not plans of supporting optimizations for in-struct-member-fields being restricted ptrs.
         return false;
     }
 };
@@ -126,31 +127,31 @@ template <typename T, int32_t RankV, Hardware HardwareV, typename Traits = Tenso
 class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
 {
     public:
-    using SuperT = TensorSpanBase<T, RankV, HardwareV, Traits>;
+    using BaseT = TensorSpanBase<T, RankV, HardwareV, Traits>;
     using shape_type = typename Traits::shape_type;
     using size_type = typename Traits::size_type;
     using index_type = typename Traits::index_type;
     using value_type = typename T;
 
     CUTE_DEV_HOST constexpr TensorSpan(T* data, Array<shape_type, RankV> shape)
-      : SuperT(data, std::move(shape))
+      : BaseT(data, std::move(shape))
     {
     }
 
     template <typename... Args>
-    CUTE_DEV_HOST [[nodiscard]] constexpr T elem(Args... args) const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr T elem(Args&&... args) const noexcept
     {
         static_assert(sizeof...(Args) == RankV, "One argument per dimension");
 
-        return this->data_[this->template index<0>(0, args...)];
+        return this->data_[this->template index<0>(0, std::forward<Args>(args)...)];
     }
 
     template <typename... Args>
-    CUTE_DEV_HOST constexpr T& elem_ref(Args... args) const noexcept
+    CUTE_DEV_HOST constexpr T& elem_ref(Args&&... args) const noexcept
     {
         static_assert(sizeof...(Args) == RankV, "One argument per dimension");
 
-        return this->data_[this->template index<0>(0, args...)];
+        return this->data_[this->template index<0>(0, std::forward<Args>(args)...)];
     }
 
     CUTE_DEV_HOST [[nodiscard]] constexpr TensorSpan<T, RankV - 1, HardwareV, Traits> operator[](index_type idx) const noexcept
@@ -176,31 +177,31 @@ template <typename T, Hardware HardwareV, typename Traits>
 class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, HardwareV, Traits>
 {
     public:
-    using SuperT = TensorSpanBase<T, 1, HardwareV, Traits>;
+    using BaseT = TensorSpanBase<T, 1, HardwareV, Traits>;
     using shape_type = typename Traits::shape_type;
     using size_type = typename Traits::size_type;
     using index_type = typename Traits::index_type;
     using value_type = typename T;
 
     CUTE_DEV_HOST constexpr TensorSpan(T* data, Array<shape_type, 1> shape)
-      : SuperT(data, std::move(shape))
+      : BaseT(data, std::move(shape))
     {
     }
 
     template <typename... Args>
-    CUTE_DEV_HOST [[nodiscard]] constexpr T elem(Args... args) const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr T elem(Args&&... args) const noexcept
     {
         static_assert(sizeof...(Args) == 1, "One argument per dimension");
 
-        return this->data_[this->template index<0>(0, args...)];
+        return this->data_[this->template index<0>(0, std::forward<Args>(args)...)];
     }
 
     template <typename... Args>
-    CUTE_DEV_HOST constexpr T& elem_ref(Args... args) const noexcept
+    CUTE_DEV_HOST constexpr T& elem_ref(Args&&... args) const noexcept
     {
         static_assert(sizeof...(Args) == 1, "One argument per dimension");
 
-        return this->data_[this->template index<0>(0, args...)];
+        return this->data_[this->template index<0>(0, std::forward<Args>(args)...)];
     }
 
     CUTE_DEV_HOST constexpr T& operator[](index_type idx) const noexcept

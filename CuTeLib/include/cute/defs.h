@@ -54,4 +54,4 @@ namespace cute
 template <typename T, bool RestrictedV>
 using restricted_ptr = typename std::conditional<RestrictedV, T * CUTE_RESTRICT, T*>::type;
 
-} // namespace cute
+}  // namespace cute

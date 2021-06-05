@@ -21,7 +21,7 @@ struct Array
     T data_[Length];
 
 
-    // ======= Static Members =======
+    // ======= Static constexpr Members =======
 
     ///
     /// Returns true if length is 0 or below
@@ -70,58 +70,41 @@ struct Array
         return this->data_[idx];
     }
 
+
     ///
-    /// Returns the value at idx position in data.
+    /// Returns a ref to the value at idx position in data.
     /// Bounds check runtime.
-    CUTE_DEV_HOST [[nodiscard]] constexpr T at(const index_type idx) const
+    CUTE_DEV_HOST [[nodiscard]] constexpr T& at(const index_type idx)
     {
         assert(idx < Length);
         return this->data_[idx];
     }
 
     ///
-    /// Returns a reference to the element at idx position in data.
+    /// Returns a ref to the value at idx position in data.
     /// Bounds check runtime.
-    CUTE_DEV_HOST [[nodiscard]] constexpr T& at_ref(const index_type idx)
+    CUTE_DEV_HOST [[nodiscard]] constexpr const T& at(const index_type idx) const
     {
         assert(idx < Length);
         return this->data_[idx];
     }
 
-    ///
-    /// Returns a const reference to the element at idx position in data.
-    /// Bounds check runtime.
-    CUTE_DEV_HOST [[nodiscard]] constexpr const T& at_ref(const index_type idx) const
-    {
-        assert(idx < Length);
-        return this->data_[idx];
-    }
 
     ///
-    /// Returns the value at idx position in data.
+    /// Returns a ref to the value at idx position in data.
     /// Bounds check compile-time.
     template <int32_t Idx>
-    CUTE_DEV_HOST [[nodiscard]] constexpr T at() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr T& at() noexcept
     {
         static_assert(Idx < Length, "Out of bounds");
         return this->data_[Idx];
     }
 
     ///
-    /// Returns a reference to the element at idx position in data.
+    /// Returns a ref to the value at idx position in data.
     /// Bounds check compile-time.
     template <int32_t Idx>
-    CUTE_DEV_HOST [[nodiscard]] constexpr T& at_ref() noexcept
-    {
-        static_assert(Idx < Length, "Out of bounds");
-        return this->data_[Idx];
-    }
-
-    ///
-    /// Returns a const reference to the element at idx position in data.
-    /// Bounds check compile-time.
-    template <int32_t Idx>
-    CUTE_DEV_HOST [[nodiscard]] constexpr const T& at_ref() const noexcept
+    CUTE_DEV_HOST [[nodiscard]] constexpr const T& at() const noexcept
     {
         static_assert(Idx < Length, "Out of bounds");
         return this->data_[Idx];
