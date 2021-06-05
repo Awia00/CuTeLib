@@ -33,6 +33,8 @@ def build_cpp(args):
         cmake_cmd = [
             "cmake",
             f"-DCMAKE_INSTALL_PREFIX={install_folder}",
+            f"-DCUTELIB_BUILD_TESTS=ON",
+            f"-DCUTELIB_BUILD_EXAMPLES=ON",
             "-S",
             ".",
             "-B",
