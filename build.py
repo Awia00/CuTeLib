@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import time
+import platform
 
 
 def ensure_build_type(build_type):
@@ -40,6 +41,7 @@ def build_cpp(args):
             "-B",
             build_folder,
         ]
+
         build_cmd = [
             "cmake",
             "--build",
