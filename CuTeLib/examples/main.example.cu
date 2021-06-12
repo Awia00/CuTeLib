@@ -13,7 +13,6 @@
 namespace cute
 {
 
-
 namespace  /// example_id="cutelib_introduction"
 {
 
@@ -234,7 +233,7 @@ void cutelib_graph()
         saxpy<<<1, 128, shared_mem_size, stream>>>(0.5, y, x, out);
 
         cute::copy_async(out, res, stream);
-        // can also explicitly call: `recorder.stop_recording()`
+        recorder.stop_recording();
     }
 
     auto instance = graph.get_instance();

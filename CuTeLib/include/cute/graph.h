@@ -101,7 +101,7 @@ struct Graph
     }
 
     private:
-    struct StreamRecording
+    struct [[nodiscard]] StreamRecording
     {
         private:
         bool recording_;

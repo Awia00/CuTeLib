@@ -13,7 +13,10 @@ target_include_directories(
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_compile_features(${LIB_NAME} INTERFACE cxx_std_17)
-target_compile_options(${LIB_NAME} INTERFACE "$<$<COMPILE_LANG_AND_ID:CUDA,NVCC>:--default-stream per-thread --expt-relaxed-constexpr>")
+target_compile_options(${LIB_NAME}
+    INTERFACE
+    "$<$<COMPILE_LANG_AND_ID:CUDA,NVCC>:--default-stream per-thread --expt-relaxed-constexpr>"
+)
 
 
 # == Install ==
@@ -55,7 +58,11 @@ if(CUTELIB_BUILD_TESTS)
         ${TEST_NAME}
         PROPERTIES CUDA_SEPARABLE_COMPILATION ON
     )
-    target_compile_options(${TEST_NAME} PRIVATE "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
+    target_compile_options(${TEST_NAME}
+        PRIVATE
+        $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->
+        $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4 /WX>
+    )
 
     # == Install ==
     install(
@@ -80,7 +87,11 @@ if(CUTELIB_BUILD_EXAMPLES)
         ${EXAMPLES_NAME}
         PROPERTIES CUDA_SEPARABLE_COMPILATION ON
     )
-    target_compile_options(${EXAMPLES_NAME} PRIVATE "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
+    target_compile_options(${EXAMPLES_NAME}
+        PRIVATE
+        $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->
+        $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4 /WX>
+    )
 
     # == Install ==
     install(

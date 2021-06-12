@@ -45,7 +45,7 @@ class Tensor
 
         if constexpr (Traits::zero_initialize)
         {
-            memset(this->data_, T(), this->size() * sizeof(T));
+            memset(this->data_, static_cast<int>(T{}), this->size() * sizeof(T));
         }
     }
 
@@ -58,7 +58,7 @@ class Tensor
 
         if constexpr (Traits::zero_initialize)
         {
-            memset_async(this->data_, T(), this->size() * sizeof(T), stream);
+            memset_async(this->data_, static_cast<int>(T{}), this->size() * sizeof(T), stream);
         }
     }
 
@@ -67,7 +67,7 @@ class Tensor
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
-        assert(init_list.size() == shape.template mul<size_type>());
+        assert(static_cast<size_type>(init_list.size()) == shape.template mul<size_type>());
 
         memcpy(init_list, this->data_, init_list.size());
     }

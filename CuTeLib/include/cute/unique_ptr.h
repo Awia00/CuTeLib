@@ -42,7 +42,7 @@ struct NewFunctorCPU
         return new TBase[num_elements];
     }
 
-    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView& stream) noexcept
+    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView&) noexcept
     {
         return new TBase[num_elements];
     }
@@ -264,16 +264,16 @@ template <Hardware HardwareV>
 struct MemsetPartialTemplateSpecializer
 {
     template <typename T>
-    constexpr static void memset_data(T* ptr, T val, size_t num_bytes);
+    constexpr static void memset_data(T* ptr, int val, size_t num_bytes);
 
     template <typename T>
-    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, StreamView& stream);
+    constexpr static void memset_data_async(T* ptr, int val, size_t num_bytes, StreamView& stream);
 };
 
 #ifdef __CUDACC__
 template <Hardware HardwareV>
 template <typename T>
-constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data<T>(T* ptr, T val, size_t num_bytes)
+constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data<T>(T* ptr, int val, size_t num_bytes)
 {
     if constexpr (HardwareV == Hardware::CPU)
     {
@@ -288,7 +288,7 @@ constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data<T>(T* pt
 template <Hardware HardwareV>
 template <typename T>
 constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data_async<T>(T* ptr,
-                                                                                 T val,
+                                                                                 int val,
                                                                                  size_t num_bytes,
                                                                                  StreamView& stream)
 {
@@ -308,13 +308,13 @@ template <>
 struct MemsetPartialTemplateSpecializer<Hardware::CPU>
 {
     template <typename T>
-    constexpr static void memset_data(T* ptr, T val, size_t num_bytes)
+    constexpr static void memset_data(T* ptr, int val, size_t num_bytes)
     {
         std::memset(ptr, val, num_bytes);
     }
 
     template <typename T>
-    constexpr static void memset_data_async(T* ptr, T val, size_t num_bytes, StreamView& stream)
+    constexpr static void memset_data_async(T* ptr, int val, size_t num_bytes, StreamView& stream)
     {
         std::memset(ptr, val, num_bytes);
     }
@@ -322,8 +322,8 @@ struct MemsetPartialTemplateSpecializer<Hardware::CPU>
 #endif
 
 
-template <typename HardwareUniquePtrT, typename T>
-constexpr void memset(HardwareUniquePtrT& ptr, T val, size_t num_bytes)
+template <typename HardwareUniquePtrT>
+constexpr void memset(HardwareUniquePtrT& ptr, int val, size_t num_bytes)
 {
     using RemRef = typename std::remove_reference_t<HardwareUniquePtrT>;
     constexpr auto hardware = what_hardware<RemRef>();
@@ -331,8 +331,8 @@ constexpr void memset(HardwareUniquePtrT& ptr, T val, size_t num_bytes)
     MemsetPartialTemplateSpecializer<hardware>::memset_data(ptr.get(), val, num_bytes);
 }
 
-template <typename HardwareUniquePtrT, typename T>
-constexpr void memset_async(HardwareUniquePtrT& ptr, T val, size_t num_bytes, StreamView& stream)
+template <typename HardwareUniquePtrT>
+constexpr void memset_async(HardwareUniquePtrT& ptr, int val, size_t num_bytes, StreamView& stream)
 {
     using RemRef = typename std::remove_reference_t<HardwareUniquePtrT>;
     constexpr auto hardware = what_hardware<RemRef>();
