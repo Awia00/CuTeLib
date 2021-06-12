@@ -75,7 +75,8 @@ struct Graph
         cudaGraphDestroy(this->native_graph_);
     }
 
-    [[nodiscard]] GraphInstance get_instance()
+    [[nodiscard]] GraphInstance get_instance() && = delete;
+    [[nodiscard]] GraphInstance get_instance() &
     {
         return GraphInstance(*this);
     }
@@ -135,7 +136,9 @@ struct Graph
     };
 
     public:
-    [[nodiscard]] StreamRecording start_recording(StreamView& stream, cudaStreamCaptureMode mode = cudaStreamCaptureModeGlobal)
+    [[nodiscard]] StreamRecording start_recording(StreamView& stream, cudaStreamCaptureMode mode) && = delete;
+    [[nodiscard]] StreamRecording start_recording(StreamView& stream,
+                                                  cudaStreamCaptureMode mode = cudaStreamCaptureModeGlobal) &
     {
         return StreamRecording(stream, *this, mode);
     }
