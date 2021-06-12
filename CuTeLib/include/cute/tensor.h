@@ -234,15 +234,18 @@ class Tensor
         return this->data_;
     }
 
-    [[nodiscard]] constexpr TensorSpan<T, RankV, HardwareV> get_span() noexcept
+    [[nodiscard]] constexpr TensorSpan<T, RankV, HardwareV> get_span() & noexcept
     {
         return get_span_of(this->data_, this->shape_);
     }
+    [[nodiscard]] constexpr TensorSpan<T, RankV, HardwareV> get_span() && = delete;
 
-    [[nodiscard]] constexpr TensorSpan<const T, RankV, HardwareV> get_span() const noexcept
+    [[nodiscard]] constexpr TensorSpan<const T, RankV, HardwareV> get_span() const& noexcept
     {
         return get_span_of(this->data_, this->shape_);
     }
+    [[nodiscard]] constexpr TensorSpan<const T, RankV, HardwareV> get_span() const&& = delete;
+
 
     [[nodiscard]] constexpr operator TensorSpan<T, RankV, HardwareV>() noexcept
     {
