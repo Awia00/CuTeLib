@@ -8,11 +8,7 @@
 The purpose of the **CU**DA **Te**mplate **Lib**rary is to provide constructs for better type safety and usability of CUDA code with no runtime overhead, both in kernels and in the calling host code.
 
 ```cpp
-#include <cuda.h>
-#include <cute/array.h>
-#include <cute/tensor.h>
-#include <cute/tensor_generators.h>
-#include <cute/tensor_span.h>
+#include <cute/cute.h>
 
 __global__ void saxpy(float a,
                       cute::TensorSpan<const float, 1, Hardware::GPU> x,

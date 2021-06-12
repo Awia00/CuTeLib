@@ -2,13 +2,7 @@
 #include <cuda.h>
 #include <iostream>
 #include <vector>
-#include <cute/array.h>
-#include <cute/graph.h>
-#include <cute/stream.h>
-#include <cute/tensor.h>
-#include <cute/tensor_generators.h>
-#include <cute/tensor_span.h>
-#include <cute/unique_ptr.h>
+#include <cute/cute.h>
 
 namespace cute
 {
@@ -17,11 +11,7 @@ namespace  /// example_id="cutelib_introduction"
 {
 
 #include <cuda.h>
-#include <cute/array.h>
-#include <cute/tensor.h>
-#include <cute/tensor_generators.h>
-#include <cute/tensor_span.h>
-#include <cute/unique_ptr.h>
+#include <cute/cute.h>
 
 __global__ void saxpy(float a,
                       cute::TensorSpan<const float, 1, Hardware::GPU> x,
