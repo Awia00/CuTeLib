@@ -1,6 +1,7 @@
 # CuTeLib
 
 [![Build](https://github.com/anders-wind/CuTeLib/actions/workflows/ci.yml/badge.svg)](https://github.com/anders-wind/CuTeLib/actions/workflows/ci.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/anders-wind/cutelib/badge)](https://www.codefactor.io/repository/github/anders-wind/cutelib)
 
 ## Purpose
 
@@ -44,7 +45,6 @@ void cutelib_intro()
 ```
 
 For more have a look at the [Wiki](https://github.com/Awia00/CuTeLib/wiki)
-
 
 ## Development
 
