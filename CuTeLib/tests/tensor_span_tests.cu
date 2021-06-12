@@ -95,7 +95,6 @@ TEST_SUITE("tensor_span")
         }
     }
 
-
     TEST_CASE("operator[] 1d")
     {
         const auto iota_tensor = iota<int32_t>(shape(128));
@@ -140,20 +139,19 @@ TEST_SUITE("tensor_span")
         }
     }
 
-
     TEST_CASE("transfer")
     {
         const auto cpu_tensor = iota<int32_t>(shape(2, 2));
         auto cpu_transfered = cpu_tensor.transfer<Hardware::CPU>();  // just a regular copy
 
         CHECK(cpu_tensor.data() != cpu_transfered.data());  // its not the same memory
-        check_tensors(cpu_transfered, cpu_tensor);  // but it is the same values
+        CHECK(cute::equal(cpu_transfered, cpu_tensor));  // but it is the same values
 
         auto gpu_transfered = cpu_transfered.transfer<Hardware::GPU>();
         CHECK(gpu_transfered.data() != cpu_transfered.data());  // its not the same memory
 
         auto moved_back = gpu_transfered.transfer<Hardware::CPU>();
-        check_tensors(moved_back, cpu_tensor);
+        CHECK(cute::equal(moved_back, cpu_tensor));
     }
 }
 
