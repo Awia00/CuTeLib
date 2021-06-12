@@ -6,7 +6,6 @@ import os
 import shutil
 import subprocess
 import time
-import platform
 
 
 def ensure_build_type(build_type):

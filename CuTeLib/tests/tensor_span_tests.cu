@@ -1,6 +1,7 @@
-#include <iostream>
+#include <sstream>
 #include "test_utils.h"
 #include <cute/array.h>
+#include <cute/stream.h>
 #include <cute/tensor.h>
 #include <cute/tensor_generators.h>
 #include <cute/tensor_span.h>
@@ -152,6 +153,65 @@ TEST_SUITE("tensor_span")
 
         auto moved_back = gpu_transfered.transfer<Hardware::CPU>();
         CHECK(cute::equal(moved_back, cpu_tensor));
+    }
+
+    TEST_CASE("transfer_async")
+    {
+        const auto cpu_tensor = iota<int32_t>(shape(2, 2));
+        auto stream = Stream();
+        auto cpu_transfered = cpu_tensor.transfer_async<Hardware::CPU>(stream);  // just a regular copy
+
+        CHECK(cpu_tensor.data() != cpu_transfered.data());  // its not the same memory
+        CHECK(cute::equal(cpu_transfered, cpu_tensor));  // but it is the same values
+
+        auto gpu_transfered = cpu_transfered.transfer_async<Hardware::GPU>(stream);
+        CHECK(gpu_transfered.data() != cpu_transfered.data());  // its not the same memory
+
+        auto moved_back = gpu_transfered.transfer<Hardware::CPU>();
+        stream.synchronize();
+        CHECK(cute::equal(moved_back, cpu_tensor));
+    }
+
+    TEST_CASE("copy_async")
+    {
+        const auto cpu_tensor = iota<int32_t>(shape(2, 2));
+        auto stream = Stream();
+        auto cpu_tensor2 = Tensor<int32_t, 2, Hardware::CPU>(shape(2, 2));
+
+        CHECK(!cute::equal(cpu_tensor2, cpu_tensor));  // but it is the same values
+        copy_async(cpu_tensor, cpu_tensor2, stream);
+
+        CHECK(cpu_tensor.data() != cpu_tensor2.data());  // its not the same memory
+        CHECK(cute::equal(cpu_tensor2, cpu_tensor));  // but it is the same values
+
+        auto gpu_tensor = Tensor<int32_t, 2, Hardware::GPU>(shape(2, 2));
+        copy_async(cpu_tensor, gpu_tensor, stream);
+        CHECK(gpu_tensor.data() != cpu_tensor.data());  // its not the same memory
+
+        auto moved_back = Tensor<int32_t, 2, Hardware::CPU>(shape(2, 2));
+        copy_async(gpu_tensor, moved_back, stream);
+        stream.synchronize();
+        CHECK(cute::equal(moved_back, cpu_tensor));
+    }
+
+    TEST_CASE("operator<<")
+    {
+        auto to_string = [](const auto& elem) -> std::string
+        {
+            auto ss = std::stringstream{};
+            ss << elem;
+            return ss.str();
+        };
+
+        CHECK_EQ(to_string(iota<int32_t>(shape(0))), "[]");
+        CHECK_EQ(to_string(iota<int32_t>(shape(1))), "[0]");
+        CHECK_EQ(to_string(iota<int32_t>(shape(2))), "[0, 1]");
+        CHECK_EQ(to_string(iota<int32_t>(shape(3))), "[0, 1, 2]");
+        CHECK_EQ(to_string(iota<int32_t>(shape(0, 0))), "[\n]");
+        CHECK_EQ(to_string(iota<int32_t>(shape(1, 1))), "[\n  [0]\n]");
+        CHECK_EQ(to_string(iota<int32_t>(shape(1, 2))), "[\n  [0, 1]\n]");
+        CHECK_EQ(to_string(iota<int32_t>(shape(2, 1))), "[\n  [0],\n  [1]\n]");
+        CHECK_EQ(to_string(iota<int32_t>(shape(2, 2))), "[\n  [0, 1],\n  [2, 3]\n]");
     }
 }
 

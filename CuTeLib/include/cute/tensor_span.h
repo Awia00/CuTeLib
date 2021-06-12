@@ -1,9 +1,11 @@
 #pragma once
+#include <iostream>
 #include <utility>
 #include <cute/array.h>
 #include <cute/defs.h>
 #include <cute/hardware.h>
 #include <cute/unique_ptr.h>
+
 
 namespace cute
 {
@@ -66,7 +68,7 @@ class [[nodiscard]] TensorSpanBase
 
     CUTE_DEV_HOST [[nodiscard]] constexpr bool empty() const noexcept
     {
-        return this->shape_.empty();
+        return this->size() == 0;
     }
 
     CUTE_DEV_HOST [[nodiscard]] constexpr size_type size() const noexcept
@@ -167,6 +169,7 @@ class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV
         return TensorSpan<const T, RankV, HardwareV, Traits>(this->data_, this->shape_);
     }
 
+    template <typename DummyV = void>
     CUTE_DEV_HOST operator TensorSpan<const T, RankV, HardwareV, Traits>() const noexcept
     {
         return this->to_const();
@@ -214,6 +217,7 @@ class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpa
         return TensorSpan<const T, 1, HardwareV, Traits>(this->data_, this->shape_);
     }
 
+    template <typename DummyV = void>
     CUTE_DEV_HOST operator TensorSpan<const T, 1, HardwareV, Traits>() const noexcept
     {
         return this->to_const();
@@ -239,10 +243,10 @@ std::ostream& operator<<(std::ostream& stream, const TensorSpan<T, 1, Hardware::
 template <typename T, typename Traits>
 std::ostream& operator<<(std::ostream& stream, const TensorSpan<T, 2, Hardware::CPU, Traits>& tensor_span)
 {
-    stream << "[\n  ";
+    stream << "[";
     if (!tensor_span.empty())
     {
-        stream << tensor_span[0];
+        stream << "\n  " << tensor_span[0];
     }
     for (auto i = 1; i < tensor_span.template shape<0>(); i++)
     {
@@ -257,11 +261,7 @@ template <typename TensorLikeT>
 bool equal(const TensorLikeT& first, const TensorLikeT& other)
 {
     static_assert(TensorLikeT::hardware() == Hardware::CPU, "Only supports CPU tensors currently");
-    if (first.get_shape() == other.get_shape())
-    {
-        return std::equal(first.begin(), first.end(), other.begin());
-    }
-    return false;
+    return first.get_shape() == other.get_shape() && std::equal(first.begin(), first.end(), other.begin());
 }
 
 template <typename TensorLikeFromT, typename TensorLikeToT>
@@ -307,10 +307,10 @@ template <typename HardwareUniquePtrT, typename ShapeContainerT, typename Traits
     return TensorSpan<const T, RankV, HardwareV, Traits>(data.get(), std::forward<ShapeContainerT>(shapes));
 }
 
-template <typename... Args>
-[[nodiscard]] constexpr auto shape(Args... args)
+template <typename T, typename... Args>
+[[nodiscard]] constexpr auto shape(T arg, Args... args)
 {
-    return Array<TensorSpanTraits::shape_type, sizeof...(Args)>{ args... };
+    return Array<TensorSpanTraits::shape_type, sizeof...(Args) + 1>{ arg, args... };
 }
 
 }  // namespace cute

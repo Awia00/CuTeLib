@@ -5,3 +5,7 @@
 build
 inst
 __pycache__
+
+# OpenCppCoverage files
+CoverageReport-*
+LastCoverageResults.log

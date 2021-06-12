@@ -302,7 +302,7 @@ template <typename T, int32_t Length, typename Traits>
 std::ostream& operator<<(std::ostream& stream, const Array<T, Length, Traits>& arr)
 {
     stream << "[";
-    if (!arr.empty())
+    if constexpr (!Array<T, Length, Traits>::empty())
     {
         stream << arr.template at<0>();
     }

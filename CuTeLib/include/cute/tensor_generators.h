@@ -7,9 +7,9 @@
 #include <cute/array.h>
 #include <cute/tensor.h>
 
+
 namespace cute
 {
-
 
 template <typename T, typename ShapesT>
 [[nodiscard]] auto iota(ShapesT args, T initial = 0)
