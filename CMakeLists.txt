@@ -4,8 +4,14 @@ project(CuTe VERSION 0.0.1)
 option(CUTELIB_BUILD_TESTS "Specifies whether or not to build tests" OFF)
 option(CUTELIB_BUILD_EXAMPLES "Specifies whether or not to build examples" OFF)
 
-find_package(CUDAToolkit)
+include(cmake/CPM.cmake)
 
-add_subdirectory(third_party)
+# dependencies
+find_package(CUDAToolkit)
+if(CUTELIB_BUILD_TESTS)
+    CPMAddPackage("gh:onqtam/doctest#2.4.5")
+endif()
+
+# project code
 add_subdirectory(CuTeLib)
 
