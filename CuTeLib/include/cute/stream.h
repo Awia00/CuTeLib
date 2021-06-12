@@ -77,6 +77,18 @@ class StreamView
     {
         return StreamView(cudaStreamPerThread);
     }
+    static int32_t get_lowest_priority()
+    {
+        auto priority = 0;
+        cudaDeviceGetStreamPriorityRange(&priority, nullptr);
+        return priority;
+    }
+    static int32_t get_greatest_priority()
+    {
+        auto priority = 0;
+        cudaDeviceGetStreamPriorityRange(nullptr, &priority);
+        return priority;
+    }
 };
 
 /**
