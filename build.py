@@ -36,6 +36,7 @@ def build_cpp(args):
             "-DCUTELIB_BUILD_TESTS=ON",
             "-DCUTELIB_BUILD_EXAMPLES=ON",
             "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+            "-DCMAKE_CUDA_ARCHITECTURES=75",
             "-S",
             ".",
             "-B",
