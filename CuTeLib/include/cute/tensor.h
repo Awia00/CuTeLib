@@ -15,7 +15,7 @@ struct TensorTraits
     using size_type = int64_t;
     using index_type = int32_t;
 
-    constexpr static bool zero_initialize = true;
+    constexpr static bool initialize = true;
 };
 
 ///
@@ -43,9 +43,15 @@ class Tensor
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
 
-        if constexpr (Traits::zero_initialize)
+        if constexpr (Traits::initialize)
         {
-            memset(this->data_, static_cast<int>(T{}), this->size() * sizeof(T));
+            if constexpr (std::is_convertible_v<T, int>)
+            {
+                memset(this->data_, static_cast<int>(T{}), this->size() * sizeof(T));
+            }
+            {
+                memset(this->data_, 0, this->size() * sizeof(T));
+            }
         }
     }
 
@@ -56,9 +62,15 @@ class Tensor
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
 
-        if constexpr (Traits::zero_initialize)
+        if constexpr (Traits::initialize)
         {
-            memset_async(this->data_, static_cast<int>(T{}), this->size() * sizeof(T), stream);
+            if constexpr (std::is_convertible_v<T, int>)
+            {
+                memset_async(this->data_, static_cast<int>(T{}), this->size() * sizeof(T), stream);
+            }
+            {
+                memset_async(this->data_, 0, this->size() * sizeof(T), stream);
+            }
         }
     }
 
