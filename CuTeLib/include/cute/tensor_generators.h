@@ -19,6 +19,12 @@ template <typename T, typename ShapesT>
     return result;
 }
 
+static inline auto& default_random_engine_instance()
+{
+    static auto rand_gen = std::default_random_engine();
+    return rand_gen;
+}
+
 /**
  * @brief Generates a tensor with random T values. Note its very simple and mostly meant for testing
  * and easy data generation. We use std::default_random_engine so exercise caution when using this
@@ -28,10 +34,9 @@ template <typename T, typename ShapesT>
  * @param args
  * @return auto
  */
-template <typename T, typename ShapesT>
-[[nodiscard]] auto random(ShapesT args)
+template <typename T, typename ShapesT, typename RandomEngineT = std::default_random_engine>
+[[nodiscard]] auto random(ShapesT args, RandomEngineT& rand_gen = default_random_engine_instance())
 {
-    auto rand_gen = std::default_random_engine();
     auto result = Tensor<T, ShapesT::size(), Hardware::CPU>(std::move(args));
     if constexpr (std::is_floating_point_v<T>)
     {
