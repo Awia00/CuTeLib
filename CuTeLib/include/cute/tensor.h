@@ -150,8 +150,12 @@ class Tensor
         return Tensor<T, RankV, ToHardwareV, Traits>(*this);
     }
 
+
     template <Hardware ToHardwareV>
-    Tensor<T, RankV, ToHardwareV> transfer_async(StreamView& stream) const
+    Tensor<T, RankV, ToHardwareV> transfer_async(StreamView& stream) const&& = delete;
+
+    template <Hardware ToHardwareV>
+    Tensor<T, RankV, ToHardwareV> transfer_async(StreamView& stream) const&
     {
         auto res = Tensor<T, RankV, ToHardwareV>(*this, stream);
         return res;
