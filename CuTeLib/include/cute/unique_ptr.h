@@ -3,6 +3,7 @@
 #include <cstring>
 #include <memory>
 #include <vector>
+#include <cute/errors.h>
 #include <cute/hardware.h>
 #include <cute/stream.h>
 #ifdef __CUDACC__
@@ -19,7 +20,7 @@ struct DeleteFunctorGPU
     constexpr DeleteFunctorGPU() noexcept = default;
     using TBase = typename std::remove_all_extents_t<T>;
 
-    constexpr void operator()(TBase* p) const noexcept;
+    constexpr void operator()(TBase* p) const noexcept(CUTE_NOEXCEPT);
 };
 
 template <typename T>
@@ -27,8 +28,9 @@ struct NewFunctorGPU
 {
     constexpr NewFunctorGPU() noexcept = default;
 
-    [[nodiscard]] constexpr auto operator()(size_t num_elements) const noexcept;
-    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView& stream) const noexcept;
+    [[nodiscard]] constexpr auto operator()(size_t num_elements) const noexcept(CUTE_NOEXCEPT);
+    [[nodiscard]] constexpr auto operator()(size_t num_elements, StreamView& stream) const
+        noexcept(CUTE_NOEXCEPT);
 };
 
 template <typename T>
@@ -50,27 +52,28 @@ struct NewFunctorCPU
 
 #ifdef __CUDACC__
 template <typename T>
-constexpr void DeleteFunctorGPU<T>::operator()(TBase* p) const noexcept
+constexpr void DeleteFunctorGPU<T>::operator()(TBase* p) const noexcept(CUTE_NOEXCEPT)
 {
     static_assert(0 < sizeof(TBase), "can't delete an incomplete type");
-    cudaFree(p);
+    CUTE_ERROR_CHECK(cudaFree(p));
 }
 
 template <typename T>
-[[nodiscard]] constexpr auto NewFunctorGPU<T>::operator()(size_t num_elements) const noexcept
+[[nodiscard]] constexpr auto NewFunctorGPU<T>::operator()(size_t num_elements) const noexcept(CUTE_NOEXCEPT)
 {
     using TBase = typename std::remove_all_extents_t<T>;
     TBase* ptr;
-    cudaMalloc(&ptr, num_elements * sizeof(float));
+    CUTE_ERROR_CHECK(cudaMalloc(&ptr, num_elements * sizeof(float)));
     return ptr;
 }
 
 template <typename T>
-[[nodiscard]] constexpr auto NewFunctorGPU<T>::operator()(size_t num_elements, StreamView& stream) const noexcept
+[[nodiscard]] constexpr auto NewFunctorGPU<T>::operator()(size_t num_elements, StreamView& stream) const
+    noexcept(CUTE_NOEXCEPT)
 {
     using TBase = typename std::remove_all_extents_t<T>;
     TBase* ptr;
-    cudaMallocAsync(&ptr, num_elements * sizeof(float), stream);
+    CUTE_ERROR_CHECK(cudaMallocAsync(&ptr, num_elements * sizeof(float), stream));
     return ptr;
 }
 #endif
@@ -159,15 +162,15 @@ constexpr void MemCpyPartialTemplateSpecializer<MemcpyTypeT>::memcpy_data<T>(con
     }
     else if constexpr (MemcpyTypeT == MemcpyType::HostToDevice)
     {
-        cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyHostToDevice);
+        CUTE_ERROR_CHECK(cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyHostToDevice));
     }
     else if constexpr (MemcpyTypeT == MemcpyType::DeviceToHost)
     {
-        cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToHost);
+        CUTE_ERROR_CHECK(cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToHost));
     }
     else  // if (MemcpyTypeT == MemcpyType::DeviceToDevice)
     {
-        cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToDevice);
+        CUTE_ERROR_CHECK(cudaMemcpy(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToDevice));
     }
 }
 
@@ -184,15 +187,15 @@ constexpr void MemCpyPartialTemplateSpecializer<MemcpyTypeT>::memcpy_data_async<
     }
     else if constexpr (MemcpyTypeT == MemcpyType::HostToDevice)
     {
-        cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyHostToDevice, stream);
+        CUTE_ERROR_CHECK(cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyHostToDevice, stream));
     }
     else if constexpr (MemcpyTypeT == MemcpyType::DeviceToHost)
     {
-        cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToHost, stream);
+        CUTE_ERROR_CHECK(cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToHost, stream));
     }
     else  // if (MemcpyTypeT == MemcpyType::DeviceToDevice)
     {
-        cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToDevice, stream);
+        CUTE_ERROR_CHECK(cudaMemcpyAsync(to_ptr, from_ptr, elements * sizeof(T), cudaMemcpyDeviceToDevice, stream));
     }
 }
 
@@ -281,7 +284,7 @@ constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data<T>(T* pt
     }
     else  // if (hardware == MemcpyType::HostToDevice)
     {
-        cudaMemset(ptr, val, num_bytes);
+        CUTE_ERROR_CHECK(cudaMemset(ptr, val, num_bytes));
     }
 }
 
@@ -298,7 +301,7 @@ constexpr void MemsetPartialTemplateSpecializer<HardwareV>::memset_data_async<T>
     }
     else  // if (hardware == MemcpyType::HostToDevice)
     {
-        cudaMemsetAsync(ptr, val, num_bytes, stream);
+        CUDA_ERROR_CHECK(cudaMemsetAsync(ptr, val, num_bytes, stream));
     }
 }
 

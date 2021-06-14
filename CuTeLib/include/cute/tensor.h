@@ -37,7 +37,7 @@ class Tensor
     Array<shape_type, RankV> shape_;
 
     public:
-    explicit Tensor(Array<shape_type, RankV> shape) noexcept
+    explicit Tensor(Array<shape_type, RankV> shape) noexcept(CUTE_NOEXCEPT)
       : data_(cute::make_unique<T[], HardwareV>(shape.template mul<size_type>())), shape_(std::move(shape))
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
@@ -55,7 +55,7 @@ class Tensor
         }
     }
 
-    Tensor(Array<shape_type, RankV> shape, StreamView& stream) noexcept
+    Tensor(Array<shape_type, RankV> shape, StreamView& stream) noexcept(CUTE_NOEXCEPT)
       : data_(cute::make_unique_async<T[], HardwareV>(shape.template mul<size_type>(), stream))
       , shape_(std::move(shape))
     {
@@ -74,7 +74,7 @@ class Tensor
         }
     }
 
-    Tensor(const std::initializer_list<T>& init_list, Array<shape_type, RankV> shape) noexcept
+    Tensor(const std::initializer_list<T>& init_list, Array<shape_type, RankV> shape) noexcept(CUTE_NOEXCEPT)
       : data_(cute::make_unique<T[], HardwareV>(shape.template mul<size_type>())), shape_(std::move(shape))
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
@@ -86,7 +86,7 @@ class Tensor
 
     // Templated copy constructor
     template <typename OtherTensorT>
-    explicit Tensor(const OtherTensorT& other_tensor) noexcept
+    explicit Tensor(const OtherTensorT& other_tensor) noexcept(CUTE_NOEXCEPT)
       : data_(cute::make_unique<T[], HardwareV>(other_tensor.get_shape().template mul<size_type>()))
       , shape_(other_tensor.get_shape())
     {
@@ -98,7 +98,7 @@ class Tensor
 
     // Templated copy constructor
     template <typename OtherTensorT>
-    Tensor(const OtherTensorT& other_tensor, StreamView& stream) noexcept
+    Tensor(const OtherTensorT& other_tensor, StreamView& stream) noexcept(CUTE_NOEXCEPT)
       : data_(cute::make_unique_async<T[], HardwareV>(other_tensor.get_shape().template mul<size_type>(), stream))
       , shape_(other_tensor.get_shape())
     {
@@ -111,7 +111,7 @@ class Tensor
     ///
     /// Templated copy assignment
     template <typename OtherTensorT>
-    Tensor& operator=(const OtherTensorT& other_tensor) noexcept
+    Tensor& operator=(const OtherTensorT& other_tensor) noexcept(CUTE_NOEXCEPT)
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
@@ -127,7 +127,7 @@ class Tensor
         return *this;
     }
 
-    Tensor(const Tensor& other_tensor) noexcept
+    Tensor(const Tensor& other_tensor) noexcept(CUTE_NOEXCEPT)
       : data_(cute::make_unique<T[], HardwareV>(other_tensor.get_shape().template mul<size_type>()))
       , shape_(other_tensor.get_shape())
     {
@@ -136,7 +136,7 @@ class Tensor
 
         memcpy(other_tensor.data_ptr(), this->data_, other_tensor.size());
     }
-    Tensor& operator=(const Tensor& other_tensor) noexcept
+    Tensor& operator=(const Tensor& other_tensor) noexcept(CUTE_NOEXCEPT)
     {
         static_assert(!std::is_array_v<T>, "T should not be a array type");
         static_assert(!std::is_const_v<T>, "T should not be const");
@@ -152,12 +152,12 @@ class Tensor
         return *this;
     }
 
-    Tensor(Tensor&& other_tensor) noexcept = default;
-    Tensor& operator=(Tensor&& other_tensor) noexcept = default;
+    Tensor(Tensor&& other_tensor) noexcept(CUTE_NOEXCEPT) = default;
+    Tensor& operator=(Tensor&& other_tensor) noexcept(CUTE_NOEXCEPT) = default;
 
     /// Transfer copies this tensor to the specified hardware
     template <Hardware ToHardwareV>
-    [[nodiscard]] constexpr auto transfer() const noexcept
+    [[nodiscard]] constexpr auto transfer() const noexcept(CUTE_NOEXCEPT)
     {
         return Tensor<T, RankV, ToHardwareV, Traits>(*this);
     }

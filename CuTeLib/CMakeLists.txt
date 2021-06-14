@@ -15,9 +15,16 @@ target_include_directories(
 target_compile_features(${LIB_NAME} INTERFACE cxx_std_17)
 target_compile_options(${LIB_NAME}
     INTERFACE
-    "$<$<COMPILE_LANG_AND_ID:CUDA,NVCC>:--default-stream per-thread --expt-relaxed-constexpr>"
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVCC>:--default-stream per-thread>
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVCC>:--expt-relaxed-constexpr>
 )
 
+if(CUTELIB_EXCEPTIONS)
+    target_compile_definitions(${LIB_NAME}
+        INTERFACE
+        -DCUTELIB_EXCEPTIONS
+    )
+endif()
 
 # == Install ==
 install(

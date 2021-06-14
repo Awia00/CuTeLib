@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 #include <cute/defs.h>
+#include <cute/errors.h>
 #include <cute/hardware.h>
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -48,7 +49,7 @@ class StreamView
     public:
     void synchronize()
     {
-        cudaStreamSynchronize(this->native_stream_);
+        CUTE_ERROR_CHECK(cudaStreamSynchronize(this->native_stream_));
     }
 
     /**
@@ -102,12 +103,12 @@ class Stream : public StreamView
     public:
     Stream() : BaseT()
     {
-        cudaStreamCreate(&this->native_stream_);
+        CUTE_ERROR_CHECK(cudaStreamCreate(&this->native_stream_));
     }
 
     explicit Stream(uint32_t flags)
     {
-        cudaStreamCreateWithFlags(&this->native_stream_, flags);
+        CUTE_ERROR_CHECK(cudaStreamCreateWithFlags(&this->native_stream_, flags));
     }
     /**
      * @brief Construct a new Stream object. For priority see 'cudaDeviceGetStreamPriorityRange(int& priority_low, int& priority_high)'
@@ -117,7 +118,7 @@ class Stream : public StreamView
      */
     Stream(uint32_t flags, int32_t priority)
     {
-        cudaStreamCreateWithPriority(&this->native_stream_, flags, priority);
+        CUTE_ERROR_CHECK(cudaStreamCreateWithPriority(&this->native_stream_, flags, priority));
     }
 
 
@@ -135,9 +136,9 @@ class Stream : public StreamView
      * @param o_stream
      * @return Stream&
      */
-    Stream& operator=(Stream&& o_stream) noexcept
+    Stream& operator=(Stream&& o_stream) noexcept(CUTE_NOEXCEPT)
     {
-        cudaStreamDestroy(this->native_stream_);
+        CUTE_ERROR_CHECK(cudaStreamDestroy(this->native_stream_));
         this->native_stream_ = std::move(o_stream.native_stream_);
         o_stream.native_stream_ = nullptr;
         return *this;
@@ -145,7 +146,7 @@ class Stream : public StreamView
 
     ~Stream()
     {
-        cudaStreamDestroy(this->native_stream_);
+        CUTE_ERROR_NOTIFY(cudaStreamDestroy(this->native_stream_));
     }
 };
 
@@ -177,12 +178,12 @@ class EventView
      */
     void record(StreamView& stream)
     {
-        cudaEventRecord(this->native_event_, stream);
+        CUTE_ERROR_CHECK(cudaEventRecord(this->native_event_, stream));
     }
 
     void synchronize()
     {
-        cudaEventSynchronize(this->native_event_);
+        CUTE_ERROR_CHECK(cudaEventSynchronize(this->native_event_));
     }
 
     operator cudaEvent_t&()
@@ -199,7 +200,7 @@ class EventView
 inline void StreamView::wait_for(EventView& event)
 {
     constexpr auto flag = 0;  // flag must be 0, other values are only used for CUDA graphs
-    cudaStreamWaitEvent(this->native_stream_, event, flag);
+    CUTE_ERROR_CHECK(cudaStreamWaitEvent(this->native_stream_, event, flag));
 }
 
 class Event : public EventView
@@ -209,7 +210,7 @@ class Event : public EventView
     public:
     Event() : BaseT()
     {
-        cudaEventCreate(&this->native_event_);
+        CUTE_ERROR_CHECK(cudaEventCreate(&this->native_event_));
     }
 
     /**
@@ -219,7 +220,7 @@ class Event : public EventView
      */
     explicit Event(uint32_t flags)
     {
-        cudaEventCreateWithFlags(&this->native_event_, flags);
+        CUTE_ERROR_CHECK(cudaEventCreateWithFlags(&this->native_event_, flags));
     }
     Event(Event&) = delete;
     Event& operator=(Event&) = delete;
@@ -237,7 +238,7 @@ class Event : public EventView
      */
     Event& operator=(Event&& o_event)
     {
-        cudaEventDestroy(this->native_event_);
+        CUTE_ERROR_CHECK(cudaEventDestroy(this->native_event_));
         this->native_event_ = std::move(o_event.native_event_);
         o_event.native_event_ = nullptr;
         return *this;
@@ -245,7 +246,7 @@ class Event : public EventView
 
     ~Event()
     {
-        cudaEventDestroy(this->native_event_);
+        CUTE_ERROR_NOTIFY(cudaEventDestroy(this->native_event_));
     }
 };
 

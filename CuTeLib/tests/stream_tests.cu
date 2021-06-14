@@ -5,6 +5,7 @@
 #include <cute/tensor_generators.h>
 #include <doctest/doctest.h>
 
+
 namespace cute
 {
 
@@ -29,36 +30,45 @@ TEST_SUITE("Streams")
         const auto input = cute::iota<int32_t>(shape);
         const auto expected_out = cute::iota<int32_t>(shape, ((iterations) * (iterations - 1)) / 2);
 
-        auto work = [&iterations, &input](StreamView& stream)
+        // cuda graphs still dont do well with allocations: so we have to receive them allocated
+        auto work = [&iterations, &input](Tensor<int32_t, 2, Hardware::GPU>& in_gpu,
+                                          Tensor<int32_t, 2, Hardware::CPU>& out,
+                                          StreamView& stream)
         {
-            auto input_gpu = input.transfer_async<Hardware::GPU>(stream);
+            copy_async(input, in_gpu, stream);
             for (auto i = 0; i < iterations; i++)
             {
-                copy_increment<<<1, as_dim3(input.get_shape()), 0, stream>>>(input_gpu, input_gpu, i);
+                copy_increment<<<1, as_dim3(input.get_shape()), 0, stream>>>(in_gpu, in_gpu, i);
             }
-            return input_gpu.template transfer_async<Hardware::CPU>(stream);
+            copy_async(in_gpu, out, stream);
         };
+
         SUBCASE("Stream")
         {
+            auto input_gpu = Tensor<int32_t, 2, Hardware::GPU>(shape);
+            auto out = Tensor<int32_t, 2, Hardware::CPU>(shape);
             auto stream = cute::Stream();
-            auto res = work(stream);
+            work(input_gpu, out, stream);
             stream.synchronize();
-            cute::equal(res, expected_out);
+            cute::equal(out, expected_out);
         }
 
         SUBCASE("Graph")
         {
+            auto input_gpu = Tensor<int32_t, 2, Hardware::GPU>(shape);
+            auto out = Tensor<int32_t, 2, Hardware::CPU>(shape);
+
             auto stream = cute::Stream();
             auto graph = cute::Graph();
 
             auto recorder = graph.start_recording(stream);
-            auto res = work(stream);
+            work(input_gpu, out, stream);
             recorder.stop_recording();
 
             auto instance = graph.get_instance();
             instance.launch(stream);
             stream.synchronize();
-            cute::equal(res, expected_out);
+            cute::equal(out, expected_out);
         }
     }
 }

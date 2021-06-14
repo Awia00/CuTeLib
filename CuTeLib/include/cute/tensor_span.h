@@ -258,7 +258,7 @@ std::ostream& operator<<(std::ostream& stream, const TensorSpan<T, 2, Hardware::
 }
 
 template <typename TensorLikeT>
-bool equal(const TensorLikeT& first, const TensorLikeT& other)
+inline bool equal(const TensorLikeT& first, const TensorLikeT& other)
 {
     static_assert(TensorLikeT::hardware() == Hardware::CPU, "Only supports CPU tensors currently");
     return first.get_shape() == other.get_shape() && std::equal(first.begin(), first.end(), other.begin());
