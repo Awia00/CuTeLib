@@ -1,11 +1,22 @@
 #pragma once
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+
 #include <sstream>
 #include <string_view>
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#endif
 
 namespace cute
 {
+
+template <typename CudaErrorT>
+void cuda_assert(const CudaErrorT& error, std::string_view file, int line);
+
+template <typename CudaErrorT>
+void cuda_notify(const CudaErrorT& error, std::string_view file, int line);
+
+#ifdef __CUDACC__
 
 template <typename CudaErrorT>
 void cuda_assert(const CudaErrorT& error, std::string_view file, int line)
@@ -28,6 +39,7 @@ void cuda_notify(const CudaErrorT& error, std::string_view file, int line)
         std::cerr << ss.str() << std::endl;
     }
 }
+#endif
 
 }  // namespace cute
 
