@@ -25,7 +25,7 @@ __global__ void saxpy(float a,
 
 void cutelib_intro()
 {
-    // generate a iota 1d tensor (0,1,2,...,32) and transfer to GPU
+    // generate a iota 1d tensor (0,1,2,...,31) and transfer to GPU
     auto x = cute::iota<float>(shape(32)).transfer<Hardware::GPU>();
     // generate a 1d tensor with random values and transfer to GPU
     auto y = cute::random<float>(shape(32)).transfer<Hardware::GPU>();
