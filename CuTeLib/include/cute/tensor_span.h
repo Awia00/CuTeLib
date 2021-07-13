@@ -24,7 +24,7 @@ struct TensorSpanTraits
     }
 };
 
-namespace
+namespace detail
 {
 
 ///
@@ -122,14 +122,14 @@ class [[nodiscard]] TensorSpanBase
     }
 };
 
-}  // namespace
+}  // namespace detail
 
 
 template <typename T, int32_t RankV, Hardware HardwareV, typename Traits = TensorSpanTraits>
-class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV, Traits>
+class [[nodiscard]] TensorSpan final : public detail::TensorSpanBase<T, RankV, HardwareV, Traits>
 {
     public:
-    using BaseT = TensorSpanBase<T, RankV, HardwareV, Traits>;
+    using BaseT = detail::TensorSpanBase<T, RankV, HardwareV, Traits>;
     using shape_type = typename Traits::shape_type;
     using size_type = typename Traits::size_type;
     using index_type = typename Traits::index_type;
@@ -177,10 +177,11 @@ class [[nodiscard]] TensorSpan final : public TensorSpanBase<T, RankV, HardwareV
 };
 
 template <typename T, Hardware HardwareV, typename Traits>
-class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final : public TensorSpanBase<T, 1, HardwareV, Traits>
+class [[nodiscard]] TensorSpan<T, 1, HardwareV, Traits> final
+  : public detail::TensorSpanBase<T, 1, HardwareV, Traits>
 {
     public:
-    using BaseT = TensorSpanBase<T, 1, HardwareV, Traits>;
+    using BaseT = detail::TensorSpanBase<T, 1, HardwareV, Traits>;
     using shape_type = typename Traits::shape_type;
     using size_type = typename Traits::size_type;
     using index_type = typename Traits::index_type;
