@@ -17,7 +17,7 @@ struct TensorSpanTraits
     using size_type = int64_t;
     using index_type = int32_t;
 
-    constexpr static bool is_rescricted()
+    constexpr static bool is_restricted()
     {
         // Unfortunately CUDA has not plans of supporting optimizations for in-struct-member-fields being restricted ptrs.
         return false;
@@ -39,7 +39,7 @@ class [[nodiscard]] TensorSpanBase
     using size_type = typename Traits::size_type;
     using index_type = typename Traits::index_type;
     using value_type = T;
-    using ptr_type = restricted_ptr<T, Traits::is_rescricted()>;
+    using ptr_type = restricted_ptr<T, Traits::is_restricted()>;
 
     protected:
     ptr_type data_;

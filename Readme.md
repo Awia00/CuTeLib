@@ -54,9 +54,11 @@ I wish to continue to support more dependency management frameworks, such as con
 
 ## Development
 
-Build requirements:
+Build requirements (verified tested with):
 
 - CUDA >= 11.3
-- MSVC >= 16.10
+- A C++17 or newer compatible compiler: MSVC >= 16.10 or GCC >= 9.3.0
 - CMAKE >= 3.18
 - PYTHON >= 3.7
+
+You can build the library with the provided wrapper script `python build.py`.
